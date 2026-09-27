@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WaysAhead-The travel partner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1712; --surface:#142822; --surface2:#1B342A; --line:#2C4A3B;
+    --text:#EAF2EC; --muted:#82998C; --teal:#f7f4d5; --gold:#D3A75C; --coral:#FF5470;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --display: 'Fraunces', Georgia, serif;
+    box-sizing:border-box;
+    padding-top: env(safe-area-inset-top,0px);
+    padding-bottom: env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0; min-height:100dvh; font-family:var(--font); color:var(--text);
+    background:var(--bg); overflow:hidden;
+  }
+  .grain{position:fixed; inset:0; z-index:999; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+ 
+  .phone{
+    width:100%; height:100dvh; background:var(--bg);
+    overflow:hidden; position:relative;
+  }
+  .screen{position:absolute; inset:0; display:none; flex-direction:column; padding-top:50px;}
+  .screen.active{display:flex;}
+ 
+  .role-switch{position:fixed; top:calc(env(safe-area-inset-top,0px) + 10px); left:10px; z-index:9500; display:flex; background:rgba(9,15,12,.75); border:1px solid var(--line); border-radius:20px; padding:3px; gap:2px; backdrop-filter:blur(3px);}
+  .role-switch button{border:none; background:transparent; color:var(--muted); font-size:10.5px; font-weight:700; padding:6px 11px; border-radius:16px; cursor:pointer; font-family:var(--font); position:relative; transition:background .15s ease, color .15s ease;}
+  .role-switch button.on{background:var(--teal); color:#06231F;}
+  .role-badge{position:absolute; top:2px; right:4px; width:7px; height:7px; border-radius:50%; background:var(--coral); display:none;}
+  .role-badge.show{display:block; animation:sosPulse 1.4s ease-in-out infinite;}
+ 
+  .alert-card{display:flex; gap:10px; padding:13px 14px; border-radius:16px; border:1px solid var(--line); background:var(--surface); margin-bottom:10px; cursor:pointer; transition:transform .15s ease, border-color .15s ease;}
+  .alert-card:active{transform:scale(.97);}
+  .alert-card.emergency{border-color:var(--coral); background:rgba(255,84,112,.08);}
+  .alert-dot{width:9px; height:9px; border-radius:50%; background:var(--teal); margin-top:5px; flex-shrink:0;}
+  .alert-card.emergency .alert-dot{background:var(--coral);}
+  .alert-card h3{margin:0 0 3px; font-size:13.5px;}
+  .alert-time{font-size:10.5px; color:var(--muted); margin-top:2px;}
+  .alert-empty{text-align:center; padding:70px 24px; color:var(--muted); font-size:13px; line-height:1.6;}
+  .live-ping{font-size:12px; color:var(--teal); font-weight:700;}
+ 
+  .topbar{padding:8px 20px 14px; display:flex; align-items:center; justify-content:space-between;}
+  .topbar .brand{font-family:var(--display); font-weight:700; font-size:16px; letter-spacing:-0.01em;}
+  .topbar .brand span{color:var(--teal);}
+  .pill{font-size:11px; color:var(--muted); border:1px solid var(--line); padding:3px 9px; border-radius:20px;}
+ 
+  .content{flex:1; overflow-y:auto; padding:4px 20px 20px;}
+  .content::-webkit-scrollbar{display:none;}
+ 
+  h2{font-family:var(--display); font-size:20px; margin:6px 0 4px; font-weight:600;}
+  .sub{color:var(--muted); font-size:13px; margin:0 0 18px; line-height:1.5;}
+ 
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:11px; color:var(--muted); margin-bottom:6px; font-weight:600;}
+  .field .box{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:13px 14px; font-size:14px; display:flex; align-items:center; gap:10px;
+    cursor:pointer; transition:border-color .15s ease, background .15s ease;
+  }
+  .field .box:hover{border-color:#3C5C4B; background:var(--surface2);}
+  .field .box .chev{margin-left:auto; color:var(--teal); font-size:11px; font-weight:700;}
+  .location-empty{padding:14px;text-align:center;color:var(--muted);font-size:12px;}
+  .location-current{border-color:var(--teal);background:rgba(78,205,196,.08);}
+ 
+  /* First screen: keep the location controls and supporting cards on a clean grid */
+  #s1 .content{padding-top:2px;}
+  #s1 h2{margin-top:4px;}
+  #s1 .sub{max-width:100%; margin-bottom:16px;}
+  #s1 .field{margin-bottom:10px;}
+  #s1 .field label{margin-bottom:6px;}
+  #s1 .location-box{width:100%; min-height:48px; box-sizing:border-box; text-align:left; line-height:1.2;}
+  #s1 .location-box > span:nth-child(2){min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  #s1 .location-box .chev{margin-left:auto; flex-shrink:0; white-space:nowrap;}
+  #s1 .swap-locations{height:34px; width:100%; display:flex; align-items:center; justify-content:center; margin:0;}
+  #s1 .swap-locations button{width:34px; height:34px; padding:0; margin:0 auto; display:flex; align-items:center; justify-content:center; line-height:34px; text-align:center; font-family:Arial, sans-serif; font-size:18px; transform:none;}
+  #s1 .swap-locations + .connector{display:none;}
+  #s1 .stop-info{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0 14px;}
+  #s1 .stop-item{min-width:0; min-height:70px; box-sizing:border-box; padding:11px; gap:8px;}
+  #s1 .stop-item > div{min-width:0;}
+  #s1 .stop-item b,#s1 .stop-item span{overflow-wrap:anywhere;}
+  #s1 .stop-item span{font-size:10px;}
+  #s1 > .content > .btn-primary{margin-top:2px;}
+ 
+  .swap-locations{display:flex;justify-content:center;margin:-4px 0 4px;}
+  .swap-locations button{background:var(--surface2);border:1px solid var(--line);color:var(--teal);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:16px;}
+ 
+  .loc-list{max-height:260px; overflow-y:auto; margin-bottom:12px;}
+  .loc-item{width:100%; text-align:left; color:var(--text); font-family:var(--font); padding:12px 14px; background:var(--surface2); border:1px solid var(--line); border-radius:12px; margin-bottom:8px; font-size:13px; cursor:pointer; transition:border-color .15s ease, transform .15s ease;}
+  .loc-item:active{transform:scale(.97);}
+  .loc-item:hover{border-color:var(--teal);}
+  .add-row{display:flex; gap:8px;}
+  .loc-input{flex:1; background:var(--surface2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:13px; color:var(--text); font-family:var(--font);}
+  .loc-input:focus{outline:none; border-color:var(--teal);}
+  .add-row .btn{width:auto; padding:12px 18px; white-space:nowrap;}
+ 
+  .countdown{font-variant-numeric:tabular-nums; color:var(--gold); font-weight:700;}
+  .live-tag{display:inline-flex; align-items:center; gap:4px; font-size:9px; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:.04em;}
+  .live-tag i{width:5px; height:5px; border-radius:50%; background:var(--teal); animation:liveDot 1.6s ease-out infinite;}
+  .dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .dot.a{background:var(--teal);} .dot.b{background:var(--coral);}
+  .connector{width:1px; height:16px; background:var(--line); margin-left:23px;}
+ 
+  .btn{
+    width:100%; border:none; border-radius:14px; padding:14px; font-size:14px; font-weight:700;
+    font-family:var(--font); cursor:pointer; text-align:center; position:relative; overflow:hidden;
+    transition:transform .15s ease, filter .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{transform:scale(.96);}
+  .btn-primary{background:var(--teal); color:#06231F;}
+  .btn-primary:hover{filter:brightness(1.08); box-shadow:0 8px 22px rgba(78,205,196,.22);}
+  .btn-primary::after{
+    content:''; position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background:linear-gradient(115deg, transparent, rgba(255,255,255,.35), transparent);
+    animation:shine 3.2s ease-in-out infinite;
+  }
+  @keyframes shine{ 0%,60%{left:-60%;} 100%{left:130%;} }
+  .btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--line);}
+  .btn-ghost:hover{color:var(--text); border-color:var(--muted);}
+  .btn-danger{background:var(--coral); color:#2B0009;}
+  .btn-danger:hover{filter:brightness(1.1);}
+  .btn:disabled{opacity:.6; cursor:not-allowed;}
+ 
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:12px; cursor:pointer; transition:transform .15s ease, border-color .15s ease, background .15s ease;}
+  .card:active{transform:scale(.97);}
+  .card:hover{border-color:#3C5C4B;}
+  .card.selected{border-color:var(--teal); background:var(--surface2);}
+  .card-row{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .tag{display:inline-block; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; margin-bottom:6px;}
+  .tag.bus{background:rgba(78,205,196,.15); color:var(--teal);}
+  .tag.auto{background:rgba(211,167,92,.15); color:var(--gold);}
+  .card h3{font-size:14px; margin:0 0 3px;}
+  .card .meta{font-size:12px; color:var(--muted);}
+  .price{font-size:17px; font-weight:800; text-align:right;}
+  .price small{display:block; font-size:10px; color:var(--muted); font-weight:500;}
+ 
+  .stepline{display:flex; align-items:center; gap:6px; margin:14px 0 18px;}
+  .step{flex:1; height:3px; background:var(--line); border-radius:3px;}
+  .step.done{background:var(--teal);}
+ 
+  .trip-track{position:relative; padding-left:26px; margin:6px 0 20px;}
+  .tstep{position:relative; padding-bottom:22px;}
+  .tstep:last-child{padding-bottom:0;}
+  .tstep::before{content:''; position:absolute; left:-26px; top:2px; width:10px; height:10px; border-radius:50%; background:var(--line); border:2px solid var(--bg);}
+  .tstep.done::before{background:var(--teal);}
+  .tstep.now::before{background:var(--gold); box-shadow:0 0 0 4px rgba(211,167,92,.25);}
+  .tstep::after{content:''; position:absolute; left:-22px; top:12px; width:1px; height:100%; background:var(--line);}
+  .tstep:last-child::after{display:none;}
+  .tstep b{font-size:13px; display:block;}
+  .tstep span{font-size:11px; color:var(--muted);}
+ 
+  .notify-banner{
+    background:rgba(78,205,196,.1); border:1px solid rgba(78,205,196,.3); border-radius:12px;
+    padding:10px 12px; font-size:12px; color:var(--teal); margin-bottom:16px; display:flex; gap:8px; align-items:center;
+  }
+ 
+  .sos-dock{padding:14px 20px 22px; border-top:1px solid var(--line);}
+  .sos-btn{
+    width:100%; background:var(--coral); color:#2B0009; border:none; border-radius:16px;
+    padding:16px; font-weight:800; font-size:14px; font-family:var(--font); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:transform .15s ease; animation:sosPulse 2.4s ease-in-out infinite;
+  }
+  .sos-btn:active{transform:scale(.96);}
+ 
+  .sos-fab{
+    position:absolute; top:36px; right:16px; z-index:6; width:34px; height:34px; border-radius:50%;
+    background:var(--coral); color:#2B0009; border:none; font-size:14px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:transform .15s ease; animation:sosPulse 2.4s ease-in-out infinite;
+  }
+  .sos-fab:active{transform:scale(.9);}
+ 
+  @keyframes sosPulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,84,112,.45); }
+    50%{ box-shadow:0 0 0 9px rgba(255,84,112,0); }
+  }
+ 
+  .icon{width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; vertical-align:-3px;}
+ 
+  .stop-info{display:flex; gap:10px; margin:14px 0 4px;}
+  .stop-item{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; display:flex; gap:9px; align-items:flex-start;}
+  .stop-item svg{margin-top:2px; color:var(--teal);}
+  .stop-item b{display:block; font-size:12.5px; font-weight:600;}
+  .stop-item span{display:block; font-size:10.5px; color:var(--muted); margin-top:1px; line-height:1.4;}
+  @keyframes liveDot{ 70%{box-shadow:0 0 0 6px rgba(78,205,196,0);} 100%{box-shadow:0 0 0 0 rgba(78,205,196,0);} }
+ 
+  .contact-chips{display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 12px;}
+  .chip{display:inline-flex; align-items:center; gap:6px; padding:7px 13px 7px 7px; border-radius:20px; border:1px solid var(--line); background:var(--surface2); color:var(--muted); font-size:12px; font-weight:600; font-family:var(--font); cursor:pointer; transition:transform .15s ease, border-color .15s ease, background .15s ease, color .15s ease;}
+  .chip:active{transform:scale(.94);}
+  .chip.on{background:rgba(78,205,196,.14); border-color:var(--teal); color:var(--teal);}
+  .chip-av{width:19px; height:19px; border-radius:50%; background:var(--line); color:var(--muted); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;}
+  .chip.on .chip-av{background:var(--teal); color:#06231F;}
+ 
+  .sos-error{display:none; background:rgba(255,84,112,.1); border:1px solid rgba(255,84,112,.35); border-radius:12px; padding:10px 12px; font-size:11.5px; color:#FFB4C0; margin-bottom:14px; line-height:1.5;}
+  .sos-error.show{display:block;}
+ 
+  .overlay{position:absolute; inset:0; background:rgba(5,6,12,.72); align-items:flex-end; z-index:10000; display:none; pointer-events:none;}
+  .overlay.active{display:flex; pointer-events:auto;}
+  .location-box{width:100%; border:1px solid var(--line); color:var(--text); font-family:var(--font); text-align:left; cursor:pointer;}
+  .location-box:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+  .sheet{background:var(--surface); width:100%; border-radius:22px 22px 0 0; padding:24px 22px 30px; border-top:1px solid var(--line);}
+  .sheet h3{margin:0 0 6px; font-size:17px;}
+  .sheet p{color:var(--muted); font-size:13px; line-height:1.6; margin:0 0 18px;}
+  .sheet .row{display:flex; gap:10px;}
+ 
+  .success-circle{width:64px; height:64px; border-radius:50%; background:rgba(78,205,196,.15); display:flex; align-items:center; justify-content:center; margin:20px auto 16px; font-size:28px;}
+ 
+ 
+ 
+  .data-badge{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .data-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);}
+  .route-extra{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .mini-stat{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:4px 7px;background:rgba(255,255,255,.015);}
+  .mini-stat strong{color:var(--text);font-weight:700;}
+  .safety-score{font-size:12px;color:var(--gold);font-weight:800;margin-top:5px;}
+  .operator{font-size:10px;color:var(--muted);margin-top:2px;max-width:220px;line-height:1.35;}
+  .empty-state{padding:16px;text-align:center;}
+  .empty-state h3{margin:0 0 5px;font-size:14px;}
+  .empty-state p{margin:0;color:var(--muted);font-size:12px;line-height:1.5;}
+  .route-count{font-size:10px;color:var(--muted);margin:-8px 0 12px;}
+ 
+  
+ 
+  .live-map{height:230px;margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#102019;position:relative;}
+  #liveMap{width:100%;height:100%;}
+  /* Leaflet tiles must keep their native dimensions; otherwise global image rules can create gaps/distortion. */
+  #liveMap .leaflet-container{width:100%;height:100%;}
+  #liveMap .leaflet-tile-pane img, #liveMap .leaflet-tile{max-width:none !important; max-height:none !important;}
+  #liveMap .leaflet-tile-container img{width:256px !important;height:256px !important;}
+  .map-overlay-label{position:absolute;z-index:500;left:10px;top:10px;padding:6px 9px;border-radius:9px;background:rgba(11,23,18,.88);border:1px solid var(--line);font-size:10px;color:var(--text);backdrop-filter:blur(6px);pointer-events:none;}
+  .leaflet-control-attribution{font-size:8px!important;}
+  .leaflet-control-zoom a{background:var(--surface)!important;color:var(--text)!important;border-color:var(--line)!important;}
+  .journey-progress{margin-top:10px;}
+  .journey-progress-head{display:flex;justify-content:space-between;gap:10px;font-size:10px;color:var(--muted);margin-bottom:6px;}
+  .journey-progress-head b{color:var(--text);font-size:10px;}
+  .journey-progress-track{height:5px;border-radius:999px;background:var(--line);overflow:hidden;}
+  .journey-progress-fill{height:100%;width:0%;border-radius:999px;background:var(--teal);transition:width .4s ease;}
+ 
+  .live-location-card{margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface2);}
+  .live-location-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .live-location-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:750;}
+  .gps-dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 5px rgba(78,205,196,.08);}
+  .gps-dot.off{background:var(--muted);box-shadow:none;}
+  .gps-status{font-size:10px;color:var(--muted);}
+  .gps-data{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+  .gps-stat{padding:9px 10px;border-radius:11px;background:rgba(0,0,0,.12);}
+  .gps-stat span{display:block;color:var(--muted);font-size:9px;margin-bottom:3px;}
+  .gps-stat b{font-size:11px;}
+  .gps-actions{display:flex;gap:8px;margin-top:10px;}
+  .gps-actions button{flex:1;}
+  .tracking-pulse{animation:gpsPulse 1.8s ease-out infinite;}
+  @keyframes gpsPulse{0%{box-shadow:0 0 0 0 rgba(78,205,196,.25)}70%{box-shadow:0 0 0 8px rgba(78,205,196,0)}100%{box-shadow:0 0 0 0 rgba(78,205,196,0)}}
+  .journey-stops{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.10);padding:11px 12px;}
+  .journey-stops-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .journey-stops-head b{font-size:11px;}
+  .journey-stops-head span{font-size:9px;color:var(--muted);}
+  .journey-stop{display:grid;grid-template-columns:18px 1fr;gap:9px;position:relative;padding:5px 0;}
+  .journey-stop:not(:last-child)::after{content:"";position:absolute;left:8px;top:23px;bottom:-5px;width:1px;background:var(--line);}
+  .journey-stop-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--text);background:var(--bg);position:relative;z-index:1;}
+  .journey-stop-dot.start{background:var(--teal);border-color:var(--teal);}
+  .journey-stop-dot.board{background:var(--gold);border-color:var(--gold);}
+  .journey-stop-dot.alight{background:var(--coral);border-color:var(--coral);}
+  .journey-stop-dot.end{background:var(--text);border-color:var(--text);}
+  .journey-stop b{display:block;font-size:10px;line-height:1.35;}
+  .journey-stop small{display:block;color:var(--muted);font-size:9px;line-height:1.35;margin-top:2px;}
+  .map-legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+  .map-legend-item{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:9px;}
+  .map-legend-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .map-legend-dot.start{background:var(--teal);}
+  .map-legend-dot.board{background:var(--gold);}
+  .map-legend-dot.alight{background:var(--coral);}
+  .map-legend-dot.end{background:var(--text);}
+  .map-legend-dot.you{background:#7AD7FF;}
+  .journey-loading{font-size:9px;color:var(--muted);padding:5px 0;}
+  .journey-note{font-size:9px;color:var(--muted);margin-top:7px;line-height:1.4;}
+ 
+</style>
+ 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+<div class="grain"></div>
+<svg style="display:none">
+  <symbol id="icon-warn" viewBox="0 0 24 24"><path d="M12 3.5 21.5 20h-19L12 3.5Z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.4" r=".9" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.3l3 3 6-6.4"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.4 8.4 8 9.5 4.6-1.1 8-4.5 8-9.5V6l-8-3Z"/><path d="M9 12l2 2 4-4.4"/></symbol>
+  <symbol id="icon-home" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M10 20v-5.5h4V20"/></symbol>
+  <symbol id="icon-bus" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="12" rx="2.2"/><path d="M3.5 12.5h17"/><circle cx="7.3" cy="19" r="1.4"/><circle cx="16.7" cy="19" r="1.4"/><path d="M6.5 8.5h3M14.5 8.5h3"/></symbol>
+  <symbol id="icon-auto" viewBox="0 0 24 24"><path d="M4 17V9.5l2.5-4h6l2 4"/><path d="M4 17h14M4 13h16"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/><path d="M18 13v-3.5h2.5L20 13"/></symbol>
+  <symbol id="icon-walk" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M10 21l1.6-6-2.1-1.6.6-4.4 3.1-1.5 2.6 2.6 3 1"/><path d="M11.9 15l3.6 1 1 5"/></symbol>
+  <symbol id="icon-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5 13 13l-4.5 2.5L11 11l4.5-2.5Z"/></symbol>
+</svg>
+ 
+<div class="phone">
+  <div class="role-switch">
+    <button class="on" id="roleBtn_user" onclick="setRole('user')">You</button>
+    <button id="roleBtn_contact" onclick="setRole('contact')">Mom's view<span class="role-badge" id="contactBadge"></span></button>
+  </div>
+      <div class="screen active" id="s1">
+        <button class="sos-fab" onclick="toggleOverlay(true)" title="Emergency SOS"><svg class="icon" style="width:15px;height:15px"><use href="#icon-warn"/></svg></button>
+        <div class="topbar"><div class="brand">Ways<span>Ahead</span></div><div class="pill">Kolkata</div></div>
+        <div class="content">
+          <h2>Plan a safe trip</h2>
+          <p class="sub">We'll compare routes from the WaysAhead transit dataset using fare, time, frequency, last-mile walk, and safety signals.</p>
+ 
+          <div class="field">
+            <label>Current location</label>
+            <button type="button" class="box location-box" onclick="openPicker('origin')" aria-label="Change current location"><span class="dot a"></span> <span id="originText">Garia</span><span class="chev">Change ›</span></button>
+          </div>
+          <div class="swap-locations"><button type="button" onclick="swapLocations()" title="Swap current location and destination" aria-label="Swap current location and destination">↕</button></div>
+          <div class="connector"></div>
+          <div class="field">
+            <label>Destination</label>
+            <button type="button" class="box location-box" onclick="openPicker('destination')" aria-label="Change destination"><span class="dot b"></span> <span id="destText">Esplanade</span><span class="chev">Change ›</span></button>
+          </div>
+ 
+          <div class="stop-info">
+            <div class="stop-item"><svg class="icon"><use href="#icon-walk"/></svg><div><b id="stopBusName">0.25 km</b><span>typical last-mile walk · dataset</span></div></div>
+            <div class="stop-item"><svg class="icon"><use href="#icon-shield"/></svg><div><b id="stopAutoName">6.8 / 10</b><span>route safety score · selected options</span></div></div>
+          </div>
+ 
+          <button class="btn btn-primary" onclick="go(2)">Find safe route</button>
+        </div>
+      </div>
+ 
+      <!-- 2. RESULTS -->
+      <div class="screen" id="s2">
+        <button class="sos-fab" onclick="toggleOverlay(true)" title="Emergency SOS"><svg class="icon" style="width:15px;height:15px"><use href="#icon-warn"/></svg></button>
+        <div class="topbar"><button class="pill" onclick="go(1)">← Edit</button><div class="pill" id="distPill">2.1 km · last-mile</div></div>
+        <div class="content">
+          <h2>Choose your ride</h2>
+          <p class="sub"><span class="live-tag" style="color:var(--gold)"><i style="background:var(--gold)"></i>Dataset</span> &nbsp;route estimates from WaysAhead Transit Dataset · <span id="datasetRouteCount"></span> routes.</p>
+ 
+          <div id="routeCount" class="route-count"></div>
+          <div id="optionsList"></div>
+ 
+          <button class="btn btn-primary" onclick="startTrip()">Start this trip</button>
+        </div>
+      </div>
+ 
+      <!-- 3. ACTIVE TRIP -->
+      <div class="screen" id="s3">
+        <div class="topbar"><div class="brand">Trip in progress</div><div class="pill" id="etaPill">ETA 18 min</div></div>
+        <div class="content">
+          <div class="notify-banner"><svg class="icon"><use href="#icon-check"/></svg> <span id="startNotifyText">Mom and Dad notified you've started this trip</span></div>
+ 
+          <div class="trip-track" id="tripTrack">
+            <div class="tstep done"><b>Walk to Sector V Gate</b><span>Completed · 2 min</span></div>
+            <div class="tstep now"><b>Shared Auto — Route 5</b><span>On board · next stop Karunamoyee More</span></div>
+            <div class="tstep"><b>Walk to Lake Town, Block A</b><span>Pending · ~3 min</span></div>
+          </div>
+ 
+          <div class="live-location-card" id="liveLocationCard">
+            <div class="live-location-head">
+              <div class="live-location-title"><span class="gps-dot off" id="gpsDot"></span> Live location</div>
+              <span class="gps-status" id="gpsStatus">Waiting for permission</span>
+            </div>
+ 
+            <div class="live-map" aria-label="Live location map">
+              <div id="liveMap"></div>
+              <div class="map-overlay-label" id="mapLabel">Waiting for GPS…</div>
+            </div>
+            <div class="journey-stops" id="journeyStops">
+              <div class="journey-stops-head"><b>Trip landmarks</b><span id="journeyStopsStatus">Finding route points…</span></div>
+              <div id="journeyStopsList"><div class="journey-loading">Start the trip to see where to begin, where to board, where to get down, and where to finish.</div></div>
+              <div class="map-legend" aria-label="Map legend">
+                <span class="map-legend-item"><i class="map-legend-dot you"></i>You</span>
+                <span class="map-legend-item"><i class="map-legend-dot start"></i>Start</span>
+                <span class="map-legend-item"><i class="map-legend-dot board"></i>Board</span>
+                <span class="map-legend-item"><i class="map-legend-dot alight"></i>Get down</span>
+                <span class="map-legend-item"><i class="map-legend-dot end"></i>Destination</span>
+              </div>
+              <div class="journey-note" id="journeyStopsNote">Stop names are taken from OpenStreetMap when available; the embedded dataset does not contain exact stop coordinates.</div>
+            </div>
+            <div class="journey-progress">
+              <div class="journey-progress-head"><span>Live movement</span><b id="movementStatus">Waiting for location</b></div>
+              <div class="journey-progress-track"><div class="journey-progress-fill" id="movementFill"></div></div>
+            </div>
+            <div class="gps-data">
+              <div class="gps-stat"><span>Latitude</span><b id="gpsLat">—</b></div>
+              <div class="gps-stat"><span>Longitude</span><b id="gpsLng">—</b></div>
+              <div class="gps-stat"><span>Accuracy</span><b id="gpsAccuracy">—</b></div>
+              <div class="gps-stat"><span>Speed</span><b id="gpsSpeed">—</b></div>
+            </div>
+            <div class="meta" id="gpsUpdated" style="margin-top:9px;">Your phone's GPS will update this while the trip is active.</div>
+            <div class="gps-actions">
+              <button class="btn btn-ghost" type="button" onclick="requestLiveLocation()">Enable GPS</button>
+              <button class="btn btn-ghost" type="button" onclick="centerOnCurrentLocation()">Recenter</button>
+            </div>
+          </div>
+ 
+          <div class="card">
+            <div class="card-row">
+              <div><h3>Staying on route</h3><div class="meta" id="routeWarnText">Your live GPS location is monitored on this device. Route-deviation alerts require a mapped route and backend geofencing.</div></div>
+            </div>
+          </div>
+ 
+          <button class="btn btn-ghost" onclick="endTrip()">End trip — I've arrived</button>
+        </div>
+        <div class="sos-dock">
+          <button class="sos-btn" onclick="toggleOverlay(true)"><svg class="icon" style="width:16px;height:16px"><use href="#icon-warn"/></svg> Emergency SOS</button>
+        </div>
+      </div>
+ 
+      <!-- 4. SOS SENT -->
+      <div class="screen" id="s4">
+        <button class="sos-fab" onclick="toggleOverlay(true)" title="Emergency SOS"><svg class="icon" style="width:15px;height:15px"><use href="#icon-warn"/></svg></button>
+        <div class="topbar"><div class="brand">Emergency alert</div></div>
+        <div class="content" style="text-align:center; padding-top:30px;">
+          <div class="success-circle" style="background:rgba(255,84,112,.15); color:var(--coral);"><svg class="icon" style="width:28px;height:28px"><use href="#icon-warn"/></svg></div>
+          <h2>Alert sent</h2>
+          <p class="sub">Your live location was shared with:</p>
+          <div class="card" style="text-align:left;cursor:default;"><div class="card-row"><div><h3><svg class="icon" style="width:13px;height:13px;color:var(--teal)"><use href="#icon-shield"/></svg> <span id="sosPoliceStation">Karunamoyee Police Station</span></h3><div class="meta">Nearest station · based on selected route</div></div></div></div>
+          <div class="card" style="text-align:left;cursor:default;"><div class="card-row"><div><h3 id="sosContactsName">Mom, Dad</h3><div class="meta">Trusted contacts · live location shared</div></div></div></div>
+          <button class="btn btn-primary" onclick="go(3)">Back to trip</button>
+        </div>
+      </div>
+ 
+      <!-- 5. ARRIVED -->
+      <div class="screen" id="s5">
+        <button class="sos-fab" onclick="toggleOverlay(true)" title="Emergency SOS"><svg class="icon" style="width:15px;height:15px"><use href="#icon-warn"/></svg></button>
+        <div class="topbar"><div class="brand">Ways<span>Ahead</span></div></div>
+        <div class="content" style="text-align:center; padding-top:40px;">
+          <div class="success-circle"><svg class="icon" style="width:28px;height:28px"><use href="#icon-check"/></svg></div>
+          <h2>You've arrived safely</h2>
+          <p class="sub" id="arrivalSummary">Total fare ₹15 · 19 min door to door</p>
+          <div class="notify-banner" style="justify-content:center;"><svg class="icon"><use href="#icon-check"/></svg> <span id="arriveNotifyText">Mom and Dad notified you're home</span></div>
+          <button class="btn btn-primary" onclick="go(1)">Plan another trip</button>
+        </div>
+      </div>
+ 
+      <!-- CONTACT MODE — Mom/Dad's view of the same app -->
+      <div class="screen" id="c1">
+        <div class="topbar"><div class="brand">Ways<span>Ahead</span></div><div class="pill">Mom's view</div></div>
+        <div class="content" id="contactInboxList">
+          <div class="alert-empty">No alerts yet.<br>You'll see it here the moment a trip starts or an SOS is sent — right in the app, no WhatsApp or SMS needed.</div>
+        </div>
+      </div>
+ 
+      <div class="screen" id="c2">
+        <div class="topbar"><button class="pill" onclick="gc('c1')">← Back</button><div class="pill">Live</div></div>
+        <div class="content">
+          <h2 id="c2Title">Trip</h2>
+          <p class="sub" id="c2Sub"></p>
+          <div class="card" style="cursor:default;">
+            <div class="card-row"><div><h3>Last update</h3><div class="meta"><span class="live-ping" id="c2LastUpdate">just now</span></div></div></div>
+          </div>
+          <div class="trip-track" id="c2Track"></div>
+          <button class="btn btn-danger" type="button" onclick="mockPoliceCall(this)">Call nearest police station</button>
+        </div>
+      </div>
+ 
+      <div class="overlay" id="sosOverlay">
+        <div class="sheet">
+          <h3>Send emergency alert?</h3>
+          <p>This shares your live location with the nearest police station and the contacts selected below.</p>
+          <div class="sos-error" id="sosErrorBox"></div>
+          <div class="contact-chips" id="contactChips"></div>
+          <div class="add-row" style="margin-bottom:16px;">
+            <input id="newContactInput" class="loc-input" type="text" placeholder="Name | +91XXXXXXXXXX">
+            <button class="btn btn-ghost" style="width:auto;" onclick="addContact()">Add</button>
+          </div>
+          <div class="row">
+            <button class="btn btn-ghost" onclick="toggleOverlay(false)">Cancel</button>
+            <button class="btn btn-danger" onclick="sendSOS()">Send alert</button>
+          </div>
+        </div>
+      </div>
+ 
+      <div class="overlay" id="locationOverlay">
+        <div class="sheet">
+          <h3 id="pickerTitle">Choose location</h3>
+          <p style="margin-bottom:10px;">Change your current location or destination. Search a place from the dataset below.</p>
+          <div class="add-row" style="margin-bottom:10px;">
+            <input id="locationSearch" class="loc-input" type="search" placeholder="Search locations…" autocomplete="off" oninput="filterLocations()">
+          </div>
+          <div id="locationHint" style="font-size:10px;color:var(--muted);margin:0 0 8px;"></div>
+          <div class="loc-list" id="locationList"></div>
+          <div class="add-row">
+            <input id="newLocInput" class="loc-input" type="text" placeholder="Add a custom place…">
+            <button class="btn btn-ghost" onclick="addLocation()">Add</button>
+          </div>
+        </div>
+      </div>
+ 
+    </div>
+ 
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ---------- WaysAhead Transit Dataset (embedded demo data) ---------- */
+const TRANSIT_DATASET = [{"Route_ID":"RT-001","Origin_Area":"Jadavpur","Destination_Area":"Kasba","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"7.6","Est_Duration_min":"13","Peak_Frequency_min":"12","Price_INR":"14","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"200","Safety_Score_1to10":"5.9","Safety_Weighted_Score":"45.4","Nearest_Police_Station_Origin":"Jadavpur PS","Nearest_Police_Station_Destination":"Kasba PS"},{"Route_ID":"RT-002","Origin_Area":"Kasba","Destination_Area":"Garia","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"15.7","Est_Duration_min":"31","Peak_Frequency_min":"7","Price_INR":"32","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"20.3","Nearest_Police_Station_Origin":"Kasba PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-003","Origin_Area":"Garia","Destination_Area":"Rajarhat Chinar Park","Mode":"Auto-rickshaw","Operator":"Local Auto Union","Distance_km":"6.5","Est_Duration_min":"21","Peak_Frequency_min":"3","Price_INR":"57","Runs_After_10PM":"Yes","Well_Lit_Stops":"No","Last_Mile_Walk_m":"150","Safety_Score_1to10":"3.5","Safety_Weighted_Score":"16.7","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Chinar Park PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-004","Origin_Area":"Behala Chowrasta","Destination_Area":"New Town Action Area I","Mode":"Non-AC Bus","Operator":"WBSTC","Distance_km":"12.9","Est_Duration_min":"52","Peak_Frequency_min":"15","Price_INR":"28","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"9.8","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"New Town PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-005","Origin_Area":"Barrackpore","Destination_Area":"Lake Town","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"5.6","Est_Duration_min":"10","Peak_Frequency_min":"8","Price_INR":"18","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"100","Safety_Score_1to10":"7.2","Safety_Weighted_Score":"72.0","Nearest_Police_Station_Origin":"Barrackpore PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Lake Town PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-006","Origin_Area":"Lake Town","Destination_Area":"Jadavpur","Mode":"Non-AC Bus","Operator":"WBSTC","Distance_km":"8.4","Est_Duration_min":"41","Peak_Frequency_min":"15","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"50","Safety_Score_1to10":"2.4","Safety_Weighted_Score":"5.9","Nearest_Police_Station_Origin":"Lake Town PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Jadavpur PS"},{"Route_ID":"RT-007","Origin_Area":"Ballygunge","Destination_Area":"Howrah Station","Mode":"Night Bus","Operator":"WBTC Night Service","Distance_km":"19.5","Est_Duration_min":"50","Peak_Frequency_min":"40","Price_INR":"46","Runs_After_10PM":"Yes","Well_Lit_Stops":"No","Last_Mile_Walk_m":"100","Safety_Score_1to10":"4.7","Safety_Weighted_Score":"9.4","Nearest_Police_Station_Origin":"Ballygunge PS","Nearest_Police_Station_Destination":"Howrah GRP PS (railway police)"},{"Route_ID":"RT-008","Origin_Area":"Kasba","Destination_Area":"Park Street","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"6.5","Est_Duration_min":"8","Peak_Frequency_min":"8","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"78.8","Nearest_Police_Station_Origin":"Kasba PS","Nearest_Police_Station_Destination":"Park Street PS"},{"Route_ID":"RT-009","Origin_Area":"Barrackpore","Destination_Area":"Dum Dum","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"14.3","Est_Duration_min":"26","Peak_Frequency_min":"10","Price_INR":"35","Runs_After_10PM":"Yes","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"8.6","Safety_Weighted_Score":"33.1","Nearest_Police_Station_Origin":"Barrackpore PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Dum Dum PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-010","Origin_Area":"Baguiati","Destination_Area":"Barrackpore","Mode":"Non-AC Bus","Operator":"WBSTC","Distance_km":"15.3","Est_Duration_min":"64","Peak_Frequency_min":"15","Price_INR":"31","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"8.0","Nearest_Police_Station_Origin":"Baguiati PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Barrackpore PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-011","Origin_Area":"Jadavpur","Destination_Area":"Sealdah","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"5.9","Est_Duration_min":"8","Peak_Frequency_min":"20","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"500","Safety_Score_1to10":"5.0","Safety_Weighted_Score":"62.5","Nearest_Police_Station_Origin":"Jadavpur PS","Nearest_Police_Station_Destination":"Sealdah GRP PS (railway police)"},{"Route_ID":"RT-012","Origin_Area":"Rajarhat Chinar Park","Destination_Area":"Howrah Station","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"4.0","Est_Duration_min":"9","Peak_Frequency_min":"20","Price_INR":"5","Runs_After_10PM":"Yes","Well_Lit_Stops":"No","Last_Mile_Walk_m":"100","Safety_Score_1to10":"4.7","Safety_Weighted_Score":"52.2","Nearest_Police_Station_Origin":"Chinar Park PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Howrah GRP PS (railway police)"},{"Route_ID":"RT-013","Origin_Area":"Howrah Station","Destination_Area":"New Town Action Area I","Mode":"AC Bus","Operator":"WBTC (Volvo)","Distance_km":"10.6","Est_Duration_min":"42","Peak_Frequency_min":"15","Price_INR":"28","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.1","Safety_Weighted_Score":"14.5","Nearest_Police_Station_Origin":"Howrah GRP PS (railway police)","Nearest_Police_Station_Destination":"New Town PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-014","Origin_Area":"Salt Lake Sector V","Destination_Area":"Shyambazar","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"13.6","Est_Duration_min":"16","Peak_Frequency_min":"15","Price_INR":"10","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"5.3","Safety_Weighted_Score":"33.1","Nearest_Police_Station_Origin":"Electronics Complex PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Shyampukur PS"},{"Route_ID":"RT-015","Origin_Area":"Garia","Destination_Area":"Esplanade","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"19.9","Est_Duration_min":"32","Peak_Frequency_min":"12","Price_INR":"22","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"500","Safety_Score_1to10":"5.0","Safety_Weighted_Score":"15.6","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"New Market PS"},{"Route_ID":"RT-016","Origin_Area":"Esplanade","Destination_Area":"New Town Action Area I","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"18.9","Est_Duration_min":"30","Peak_Frequency_min":"20","Price_INR":"22","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"150","Safety_Score_1to10":"6.0","Safety_Weighted_Score":"20.0","Nearest_Police_Station_Origin":"New Market PS","Nearest_Police_Station_Destination":"New Town PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-017","Origin_Area":"Ballygunge","Destination_Area":"Barrackpore","Mode":"Night Bus","Operator":"WBTC Night Service","Distance_km":"11.2","Est_Duration_min":"29","Peak_Frequency_min":"60","Price_INR":"27","Runs_After_10PM":"Yes","Well_Lit_Stops":"No","Last_Mile_Walk_m":"500","Safety_Score_1to10":"3.5","Safety_Weighted_Score":"12.1","Nearest_Police_Station_Origin":"Ballygunge PS","Nearest_Police_Station_Destination":"Barrackpore PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-018","Origin_Area":"Salt Lake Sector V","Destination_Area":"Howrah Station","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"5.1","Est_Duration_min":"9","Peak_Frequency_min":"8","Price_INR":"10","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"150","Safety_Score_1to10":"3.5","Safety_Weighted_Score":"38.9","Nearest_Police_Station_Origin":"Electronics Complex PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Howrah GRP PS (railway police)"},{"Route_ID":"RT-019","Origin_Area":"Ballygunge","Destination_Area":"Behala Chowrasta","Mode":"AC Bus","Operator":"WBTC (Volvo)","Distance_km":"12.2","Est_Duration_min":"49","Peak_Frequency_min":"20","Price_INR":"43","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"100","Safety_Score_1to10":"6.7","Safety_Weighted_Score":"13.7","Nearest_Police_Station_Origin":"Ballygunge PS","Nearest_Police_Station_Destination":"Behala PS"},{"Route_ID":"RT-020","Origin_Area":"Park Street","Destination_Area":"Howrah Station","Mode":"Auto-rickshaw","Operator":"Local Auto Union","Distance_km":"4.9","Est_Duration_min":"19","Peak_Frequency_min":"5","Price_INR":"40","Runs_After_10PM":"Yes","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"50","Safety_Score_1to10":"7.3","Safety_Weighted_Score":"38.4","Nearest_Police_Station_Origin":"Park Street PS","Nearest_Police_Station_Destination":"Howrah GRP PS (railway police)"},{"Route_ID":"RT-021","Origin_Area":"New Town Action Area I","Destination_Area":"Barrackpore","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"19.2","Est_Duration_min":"38","Peak_Frequency_min":"7","Price_INR":"44","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"200","Safety_Score_1to10":"3.4","Safety_Weighted_Score":"8.9","Nearest_Police_Station_Origin":"New Town PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Barrackpore PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-022","Origin_Area":"Dakshineswar","Destination_Area":"Kavi Subhash","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"30.0","Est_Duration_min":"53","Peak_Frequency_min":"7","Price_INR":"25","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"12.5","Nearest_Police_Station_Origin":"Dakshineswar PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-023","Origin_Area":"Dum Dum","Destination_Area":"Esplanade","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"9.6","Est_Duration_min":"17","Peak_Frequency_min":"7","Price_INR":"15","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"39.7","Nearest_Police_Station_Origin":"Dum Dum PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"New Market PS"},{"Route_ID":"RT-024","Origin_Area":"Shyambazar","Destination_Area":"Kavi Subhash","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"24.0","Est_Duration_min":"42","Peak_Frequency_min":"7","Price_INR":"25","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"15.7","Nearest_Police_Station_Origin":"Shyampukur PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-025","Origin_Area":"Noapara","Destination_Area":"Rabindra Sarobar","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"19.2","Est_Duration_min":"34","Peak_Frequency_min":"7","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"19.9","Nearest_Police_Station_Origin":"Noapara PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Lake PS"},{"Route_ID":"RT-026","Origin_Area":"Belgachia","Destination_Area":"Netaji Bhawan","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"13.2","Est_Duration_min":"23","Peak_Frequency_min":"7","Price_INR":"15","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"200","Safety_Score_1to10":"6.9","Safety_Weighted_Score":"30.0","Nearest_Police_Station_Origin":"Chitpur PS","Nearest_Police_Station_Destination":"Elgin PS"},{"Route_ID":"RT-027","Origin_Area":"Park Street","Destination_Area":"Kavi Subhash","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"15.6","Est_Duration_min":"28","Peak_Frequency_min":"7","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"24.1","Nearest_Police_Station_Origin":"Park Street PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-028","Origin_Area":"Central","Destination_Area":"Kavi Subhash","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"19.2","Est_Duration_min":"34","Peak_Frequency_min":"7","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"19.4","Nearest_Police_Station_Origin":"Bowbazar PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-029","Origin_Area":"Maidan","Destination_Area":"Gitanjali","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"9.6","Est_Duration_min":"17","Peak_Frequency_min":"7","Price_INR":"15","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"39.7","Nearest_Police_Station_Origin":"Maidan PS","Nearest_Police_Station_Destination":"Regent Park PS"},{"Route_ID":"RT-030","Origin_Area":"Garia","Destination_Area":"Howrah","Mode":"Metro (Subway)","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"16.0","Est_Duration_min":"32","Peak_Frequency_min":"10","Price_INR":"21","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"20.6","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Golabari PS (Howrah City Police)"},{"Route_ID":"RT-031","Origin_Area":"Garia","Destination_Area":"Howrah","Mode":"Non-AC Bus","Operator":"CSTC (Patuli Bus Stand - GPO)","Distance_km":"19.5","Est_Duration_min":"29","Peak_Frequency_min":"20","Price_INR":"26","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"350","Safety_Score_1to10":"5.0","Safety_Weighted_Score":"17.2","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Golabari PS (Howrah City Police)"},{"Route_ID":"RT-032","Origin_Area":"Howrah","Destination_Area":"Garia","Mode":"Non-AC Bus","Operator":"CSTC (GPO - Patuli Bus Stand)","Distance_km":"19.2","Est_Duration_min":"30","Peak_Frequency_min":"20","Price_INR":"30","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"350","Safety_Score_1to10":"5.0","Safety_Weighted_Score":"16.7","Nearest_Police_Station_Origin":"Golabari PS (Howrah City Police)","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-033","Origin_Area":"Howrah","Destination_Area":"Garia","Mode":"Metro (Subway)","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"19.2","Est_Duration_min":"33","Peak_Frequency_min":"10","Price_INR":"21","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"20.0","Nearest_Police_Station_Origin":"Golabari PS (Howrah City Police)","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-034","Origin_Area":"Garia","Destination_Area":"Esplanade","Mode":"Non-AC Bus","Operator":"CSTC (Patuli Bus Stand - Raj Bhawan)","Distance_km":"15.0","Est_Duration_min":"28","Peak_Frequency_min":"15","Price_INR":"25","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"18.2","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"New Market PS"},{"Route_ID":"RT-035","Origin_Area":"Garia","Destination_Area":"Esplanade","Mode":"Metro (Subway)","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"15.0","Est_Duration_min":"32","Peak_Frequency_min":"10","Price_INR":"21","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"21.1","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"New Market PS"},{"Route_ID":"RT-036","Origin_Area":"Narayanpur","Destination_Area":"Babughat","Mode":"Non-AC Bus","Operator":"WBTC (Route 217 Express)","Distance_km":"15.0","Est_Duration_min":"50","Peak_Frequency_min":"20","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"10.2","Nearest_Police_Station_Origin":"Narayanpur PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Hastings PS"},{"Route_ID":"RT-037","Origin_Area":"Gariahat","Destination_Area":"Esplanade","Mode":"Tram","Operator":"Calcutta Tram Company (Route 25)","Distance_km":"7.0","Est_Duration_min":"38","Peak_Frequency_min":"35","Price_INR":"7","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.75","Safety_Weighted_Score":"15.1","Nearest_Police_Station_Origin":"Gariahat PS","Nearest_Police_Station_Destination":"New Market PS"},{"Route_ID":"RT-038","Origin_Area":"Gariahat","Destination_Area":"Ruby General Hospital","Mode":"AC Bus","Operator":"AC24 / AC24A (Patuli/Kamalgazi - Howrah)","Distance_km":"5.5","Est_Duration_min":"21","Peak_Frequency_min":"20","Price_INR":"17","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"30.0","Nearest_Police_Station_Origin":"Gariahat PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-039","Origin_Area":"Rashbehari","Destination_Area":"Ruby General Hospital","Mode":"AC Bus","Operator":"AC24 / AC24A","Distance_km":"6.5","Est_Duration_min":"24","Peak_Frequency_min":"20","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"26.3","Nearest_Police_Station_Origin":"Kalighat PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-040","Origin_Area":"Gariahat","Destination_Area":"Howrah Station","Mode":"AC Bus","Operator":"AC6 (Garia - Howrah)","Distance_km":"14.0","Est_Duration_min":"53","Peak_Frequency_min":"20","Price_INR":"42","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.1","Safety_Weighted_Score":"11.5","Nearest_Police_Station_Origin":"Gariahat PS","Nearest_Police_Station_Destination":"Howrah GRP PS (railway police)"},{"Route_ID":"RT-041","Origin_Area":"Rashbehari","Destination_Area":"Park Street","Mode":"AC Bus","Operator":"AC6 / C5 (Garia - Howrah corridor)","Distance_km":"5.0","Est_Duration_min":"19","Peak_Frequency_min":"20","Price_INR":"15","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"33.2","Nearest_Police_Station_Origin":"Kalighat PS","Nearest_Police_Station_Destination":"Park Street PS"},{"Route_ID":"RT-042","Origin_Area":"Rashbehari","Destination_Area":"Howrah Station","Mode":"Non-AC Bus","Operator":"C5 (Garia Station - Howrah Station)","Distance_km":"12.0","Est_Duration_min":"51","Peak_Frequency_min":"15","Price_INR":"19","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"10.0","Nearest_Police_Station_Origin":"Kalighat PS","Nearest_Police_Station_Destination":"Howrah GRP PS (railway police)"},{"Route_ID":"RT-043","Origin_Area":"Ruby General Hospital","Destination_Area":"Dum Dum","Mode":"Non-AC Bus","Operator":"C12 (Garia Station - Dum Dum 7 Tank)","Distance_km":"17.0","Est_Duration_min":"73","Peak_Frequency_min":"15","Price_INR":"27","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"7.0","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Dum Dum PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-044","Origin_Area":"Ruby General Hospital","Destination_Area":"Moulali","Mode":"Non-AC Bus","Operator":"C12","Distance_km":"6.0","Est_Duration_min":"26","Peak_Frequency_min":"15","Price_INR":"10","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.3","Safety_Weighted_Score":"20.4","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Beniapukur PS"},{"Route_ID":"RT-045","Origin_Area":"Moulali","Destination_Area":"Sealdah","Mode":"Non-AC Bus","Operator":"C12","Distance_km":"2.0","Est_Duration_min":"9","Peak_Frequency_min":"15","Price_INR":"8","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"200","Safety_Score_1to10":"5.4","Safety_Weighted_Score":"60.0","Nearest_Police_Station_Origin":"Beniapukur PS","Nearest_Police_Station_Destination":"Sealdah GRP PS (railway police)"},{"Route_ID":"RT-046","Origin_Area":"Moulali","Destination_Area":"Shyambazar","Mode":"Non-AC Bus","Operator":"C12","Distance_km":"5.0","Est_Duration_min":"21","Peak_Frequency_min":"15","Price_INR":"8","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.3","Safety_Weighted_Score":"25.2","Nearest_Police_Station_Origin":"Beniapukur PS","Nearest_Police_Station_Destination":"Shyampukur PS"},{"Route_ID":"RT-047","Origin_Area":"Gariahat","Destination_Area":"Kamalgazi","Mode":"AC Bus","Operator":"M8/1 (Salt Lake Sastha Bhawan - Sonarpur Station)","Distance_km":"15.0","Est_Duration_min":"56","Peak_Frequency_min":"30","Price_INR":"45","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.1","Safety_Weighted_Score":"10.9","Nearest_Police_Station_Origin":"Gariahat PS","Nearest_Police_Station_Destination":"Sonarpur PS (South 24 Parganas)"},{"Route_ID":"RT-048","Origin_Area":"Moulali","Destination_Area":"Gariahat","Mode":"AC Bus","Operator":"M8/1","Distance_km":"7.0","Est_Duration_min":"26","Peak_Frequency_min":"30","Price_INR":"21","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"24.2","Nearest_Police_Station_Origin":"Beniapukur PS","Nearest_Police_Station_Destination":"Gariahat PS"},{"Route_ID":"RT-049","Origin_Area":"Ruby General Hospital","Destination_Area":"Garia","Mode":"Non-AC Bus","Operator":"JM2 (Malancha - Kolkata Station)","Distance_km":"7.0","Est_Duration_min":"30","Peak_Frequency_min":"30","Price_INR":"11","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"17.0","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-050","Origin_Area":"Behala","Destination_Area":"Gariahat","Mode":"Non-AC Bus","Operator":"S3W (Joka - Ecospace/Aliah University)","Distance_km":"9.0","Est_Duration_min":"39","Peak_Frequency_min":"20","Price_INR":"14","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"13.1","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"Gariahat PS"},{"Route_ID":"RT-051","Origin_Area":"Behala","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"S3W","Distance_km":"14.0","Est_Duration_min":"60","Peak_Frequency_min":"20","Price_INR":"22","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"8.5","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-052","Origin_Area":"Behala","Destination_Area":"Rashbehari","Mode":"Non-AC Bus","Operator":"CSTC (Behala Tram Depot - RB Avenue)","Distance_km":"6.0","Est_Duration_min":"11","Peak_Frequency_min":"15","Price_INR":"24","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"46.4","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"Kalighat PS"},{"Route_ID":"RT-053","Origin_Area":"Behala","Destination_Area":"Park Street","Mode":"Non-AC Bus","Operator":"CSTC (Behala Tram Depot - Esplanade Mayo Road)","Distance_km":"9.2","Est_Duration_min":"22","Peak_Frequency_min":"15","Price_INR":"33","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"23.2","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"Park Street PS"},{"Route_ID":"RT-054","Origin_Area":"Behala (via Kalighat)","Destination_Area":"Park Street","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"4.0","Est_Duration_min":"11","Peak_Frequency_min":"10","Price_INR":"14","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"57.3","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"Park Street PS"},{"Route_ID":"RT-055","Origin_Area":"Behala","Destination_Area":"Budge Budge","Mode":"Non-AC Bus","Operator":"Route 12 + C-44 (transfer at Jinjiria Bazar)","Distance_km":"19.8","Est_Duration_min":"102","Peak_Frequency_min":"20","Price_INR":"83","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"4.8","Safety_Weighted_Score":"4.7","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"Budge Budge PS (South 24 Parganas)"},{"Route_ID":"RT-056","Origin_Area":"Behala","Destination_Area":"Budge Budge","Mode":"Non-AC Bus","Operator":"Route 18A + C-44 (transfer at Janjira Bazar)","Distance_km":"19.8","Est_Duration_min":"110","Peak_Frequency_min":"20","Price_INR":"68","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"4.8","Safety_Weighted_Score":"4.4","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"Budge Budge PS (South 24 Parganas)"},{"Route_ID":"RT-057","Origin_Area":"Budge Budge","Destination_Area":"Sealdah","Mode":"Local Train","Operator":"Eastern Railway (Budge Budge-Sealdah Local)","Distance_km":"26.0","Est_Duration_min":"52","Peak_Frequency_min":"60","Price_INR":"10","Runs_After_10PM":"Yes","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"7.3","Safety_Weighted_Score":"14.0","Nearest_Police_Station_Origin":"Budge Budge PS (South 24 Parganas)","Nearest_Police_Station_Destination":"Sealdah GRP PS (railway police)"},{"Route_ID":"RT-058","Origin_Area":"Joka","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"Route 131 (Joka - Ruby Hospital)","Distance_km":"18.0","Est_Duration_min":"77","Peak_Frequency_min":"30","Price_INR":"29","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"350","Safety_Score_1to10":"1.5","Safety_Weighted_Score":"1.9","Nearest_Police_Station_Origin":"Thakurpukur PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-059","Origin_Area":"Joka","Destination_Area":"Gariahat","Mode":"Non-AC Bus","Operator":"S3W (Joka - Ecospace corridor)","Distance_km":"12.0","Est_Duration_min":"51","Peak_Frequency_min":"20","Price_INR":"19","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"300","Safety_Score_1to10":"1.6","Safety_Weighted_Score":"3.1","Nearest_Police_Station_Origin":"Thakurpukur PS","Nearest_Police_Station_Destination":"Gariahat PS"},{"Route_ID":"RT-060","Origin_Area":"Garia","Destination_Area":"Baghbazar","Mode":"Non-AC Bus","Operator":"S-21 (Garia 6 no Bus Stand - Baghbazar)","Distance_km":"18.0","Est_Duration_min":"77","Peak_Frequency_min":"20","Price_INR":"29","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"6.6","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Baghbazar PS"},{"Route_ID":"RT-061","Origin_Area":"Garia","Destination_Area":"Karunamoyee","Mode":"Non-AC Bus","Operator":"S-14 (Garia 6 no Bus Stand - Karunamoyee)","Distance_km":"17.0","Est_Duration_min":"73","Peak_Frequency_min":"20","Price_INR":"27","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"7.0","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Bidhannagar (South) PS"},{"Route_ID":"RT-062","Origin_Area":"Garia","Destination_Area":"Barasat","Mode":"AC Bus","Operator":"AC-37 (Garia 6 no Bus Stand - Barasat)","Distance_km":"22.0","Est_Duration_min":"83","Peak_Frequency_min":"30","Price_INR":"66","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.1","Safety_Weighted_Score":"7.3","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Barasat PS (North 24 Parganas)"},{"Route_ID":"RT-063","Origin_Area":"Ruby (Hemanta Mukhopadhyay)","Destination_Area":"Kavi Subhash","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC) - Orange Line","Distance_km":"5.4","Est_Duration_min":"15","Peak_Frequency_min":"12","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"45.0","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-064","Origin_Area":"Ruby (Hemanta Mukhopadhyay)","Destination_Area":"Kalighat","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC) - Orange + Blue Line","Distance_km":"15.0","Est_Duration_min":"32","Peak_Frequency_min":"12","Price_INR":"40","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"20.6","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Kalighat PS"},{"Route_ID":"RT-065","Origin_Area":"Ruby General Hospital","Destination_Area":"Esplanade","Mode":"Non-AC Bus","Operator":"S24 / C26 (Kamalgazi/Baruipur - Howrah)","Distance_km":"9.0","Est_Duration_min":"39","Peak_Frequency_min":"10","Price_INR":"14","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"13.1","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"New Market PS"},{"Route_ID":"RT-066","Origin_Area":"Ruby General Hospital","Destination_Area":"Howrah Station","Mode":"Non-AC Bus","Operator":"S24 / C26","Distance_km":"16.0","Est_Duration_min":"69","Peak_Frequency_min":"10","Price_INR":"26","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"7.4","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Howrah GRP PS (railway police)"},{"Route_ID":"RT-067","Origin_Area":"Ruby General Hospital","Destination_Area":"Netaji Subhas Chandra Bose Intl Airport","Mode":"AC Bus","Operator":"AC-37A / AC-37C (Airport - Garia Bus Stand)","Distance_km":"16.0","Est_Duration_min":"60","Peak_Frequency_min":"20","Price_INR":"48","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"350","Safety_Score_1to10":"6.0","Safety_Weighted_Score":"10.0","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Airport PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-068","Origin_Area":"Ruby General Hospital","Destination_Area":"Sealdah","Mode":"Non-AC Bus","Operator":"C12 (Garia Station - Dum Dum 7 Tank)","Distance_km":"8.0","Est_Duration_min":"34","Peak_Frequency_min":"15","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"15.0","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Sealdah GRP PS (railway police)"},{"Route_ID":"RT-069","Origin_Area":"Ruby General Hospital","Destination_Area":"Amtala","Mode":"Non-AC Bus","Operator":"Amtala - Ruby Hospital","Distance_km":"20.0","Est_Duration_min":"86","Peak_Frequency_min":"30","Price_INR":"32","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"350","Safety_Score_1to10":"1.5","Safety_Weighted_Score":"1.7","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Amtala PS (South 24 Parganas)"},{"Route_ID":"RT-070","Origin_Area":"Ruby General Hospital","Destination_Area":"Mukundapur","Mode":"Non-AC Bus","Operator":"24A/1 (Mukundapur - Howrah, private)","Distance_km":"3.0","Est_Duration_min":"13","Peak_Frequency_min":"10","Price_INR":"8","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.25","Safety_Weighted_Score":"40.4","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Purba Jadavpur PS"},{"Route_ID":"RT-071","Origin_Area":"Ruby General Hospital","Destination_Area":"New Town","Mode":"Non-AC Bus","Operator":"S3W (Joka - Ecospace/Aliah University)","Distance_km":"8.0","Est_Duration_min":"34","Peak_Frequency_min":"20","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"15.0","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"New Town PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-072","Origin_Area":"Ruby General Hospital","Destination_Area":"Science City","Mode":"Non-AC Bus","Operator":"Shared corridor (JM2 / C12 / S3W / AC-37A)","Distance_km":"3.0","Est_Duration_min":"13","Peak_Frequency_min":"5","Price_INR":"8","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.25","Safety_Weighted_Score":"40.4","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-073","Origin_Area":"Esplanade","Destination_Area":"Garia","Mode":"Metro (Subway)","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"15.0","Est_Duration_min":"32","Peak_Frequency_min":"10","Price_INR":"21","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"21.1","Nearest_Police_Station_Origin":"New Market PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-074","Origin_Area":"Esplanade","Destination_Area":"Garia","Mode":"Non-AC Bus","Operator":"CSTC (Raj Bhawan - Patuli Bus Stand)","Distance_km":"15.0","Est_Duration_min":"28","Peak_Frequency_min":"15","Price_INR":"25","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"18.2","Nearest_Police_Station_Origin":"New Market PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-075","Origin_Area":"Kasba","Destination_Area":"Jadavpur","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"7.6","Est_Duration_min":"13","Peak_Frequency_min":"12","Price_INR":"14","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"200","Safety_Score_1to10":"5.9","Safety_Weighted_Score":"45.4","Nearest_Police_Station_Origin":"Kasba PS","Nearest_Police_Station_Destination":"Jadavpur PS"},{"Route_ID":"RT-076","Origin_Area":"Garia","Destination_Area":"Kasba","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"15.7","Est_Duration_min":"31","Peak_Frequency_min":"7","Price_INR":"32","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"20.3","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Kasba PS"},{"Route_ID":"RT-077","Origin_Area":"Rajarhat Chinar Park","Destination_Area":"Garia","Mode":"Auto-rickshaw","Operator":"Local Auto Union","Distance_km":"6.5","Est_Duration_min":"21","Peak_Frequency_min":"3","Price_INR":"57","Runs_After_10PM":"Yes","Well_Lit_Stops":"No","Last_Mile_Walk_m":"150","Safety_Score_1to10":"3.5","Safety_Weighted_Score":"16.7","Nearest_Police_Station_Origin":"Chinar Park PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-078","Origin_Area":"New Town Action Area I","Destination_Area":"Behala Chowrasta","Mode":"Non-AC Bus","Operator":"WBSTC","Distance_km":"12.9","Est_Duration_min":"52","Peak_Frequency_min":"15","Price_INR":"28","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"9.8","Nearest_Police_Station_Origin":"New Town PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Behala PS"},{"Route_ID":"RT-079","Origin_Area":"Lake Town","Destination_Area":"Barrackpore","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"5.6","Est_Duration_min":"10","Peak_Frequency_min":"8","Price_INR":"18","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"100","Safety_Score_1to10":"7.2","Safety_Weighted_Score":"72.0","Nearest_Police_Station_Origin":"Lake Town PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Barrackpore PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-080","Origin_Area":"Jadavpur","Destination_Area":"Lake Town","Mode":"Non-AC Bus","Operator":"WBSTC","Distance_km":"8.4","Est_Duration_min":"41","Peak_Frequency_min":"15","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"50","Safety_Score_1to10":"2.4","Safety_Weighted_Score":"5.9","Nearest_Police_Station_Origin":"Jadavpur PS","Nearest_Police_Station_Destination":"Lake Town PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-081","Origin_Area":"Howrah Station","Destination_Area":"Ballygunge","Mode":"Night Bus","Operator":"WBTC Night Service","Distance_km":"19.5","Est_Duration_min":"50","Peak_Frequency_min":"40","Price_INR":"46","Runs_After_10PM":"Yes","Well_Lit_Stops":"No","Last_Mile_Walk_m":"100","Safety_Score_1to10":"4.7","Safety_Weighted_Score":"9.4","Nearest_Police_Station_Origin":"Howrah GRP PS (railway police)","Nearest_Police_Station_Destination":"Ballygunge PS"},{"Route_ID":"RT-082","Origin_Area":"Park Street","Destination_Area":"Kasba","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"6.5","Est_Duration_min":"8","Peak_Frequency_min":"8","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"78.8","Nearest_Police_Station_Origin":"Park Street PS","Nearest_Police_Station_Destination":"Kasba PS"},{"Route_ID":"RT-083","Origin_Area":"Dum Dum","Destination_Area":"Barrackpore","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"14.3","Est_Duration_min":"26","Peak_Frequency_min":"10","Price_INR":"35","Runs_After_10PM":"Yes","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"8.6","Safety_Weighted_Score":"33.1","Nearest_Police_Station_Origin":"Dum Dum PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Barrackpore PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-084","Origin_Area":"Barrackpore","Destination_Area":"Baguiati","Mode":"Non-AC Bus","Operator":"WBSTC","Distance_km":"15.3","Est_Duration_min":"64","Peak_Frequency_min":"15","Price_INR":"31","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"8.0","Nearest_Police_Station_Origin":"Barrackpore PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Baguiati PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-085","Origin_Area":"Sealdah","Destination_Area":"Jadavpur","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"5.9","Est_Duration_min":"8","Peak_Frequency_min":"20","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"500","Safety_Score_1to10":"5.0","Safety_Weighted_Score":"62.5","Nearest_Police_Station_Origin":"Sealdah GRP PS (railway police)","Nearest_Police_Station_Destination":"Jadavpur PS"},{"Route_ID":"RT-086","Origin_Area":"Howrah Station","Destination_Area":"Rajarhat Chinar Park","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"4.0","Est_Duration_min":"9","Peak_Frequency_min":"20","Price_INR":"5","Runs_After_10PM":"Yes","Well_Lit_Stops":"No","Last_Mile_Walk_m":"100","Safety_Score_1to10":"4.7","Safety_Weighted_Score":"52.2","Nearest_Police_Station_Origin":"Howrah GRP PS (railway police)","Nearest_Police_Station_Destination":"Chinar Park PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-087","Origin_Area":"New Town Action Area I","Destination_Area":"Howrah Station","Mode":"AC Bus","Operator":"WBTC (Volvo)","Distance_km":"10.6","Est_Duration_min":"42","Peak_Frequency_min":"15","Price_INR":"28","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.1","Safety_Weighted_Score":"14.5","Nearest_Police_Station_Origin":"New Town PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Howrah GRP PS (railway police)"},{"Route_ID":"RT-088","Origin_Area":"Shyambazar","Destination_Area":"Salt Lake Sector V","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"13.6","Est_Duration_min":"16","Peak_Frequency_min":"15","Price_INR":"10","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"5.3","Safety_Weighted_Score":"33.1","Nearest_Police_Station_Origin":"Shyampukur PS","Nearest_Police_Station_Destination":"Electronics Complex PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-089","Origin_Area":"Esplanade","Destination_Area":"Garia","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"19.9","Est_Duration_min":"32","Peak_Frequency_min":"12","Price_INR":"22","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"500","Safety_Score_1to10":"5.0","Safety_Weighted_Score":"15.6","Nearest_Police_Station_Origin":"New Market PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-090","Origin_Area":"New Town Action Area I","Destination_Area":"Esplanade","Mode":"Local Train","Operator":"Eastern Railway","Distance_km":"18.9","Est_Duration_min":"30","Peak_Frequency_min":"20","Price_INR":"22","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"150","Safety_Score_1to10":"6.0","Safety_Weighted_Score":"20.0","Nearest_Police_Station_Origin":"New Town PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"New Market PS"},{"Route_ID":"RT-091","Origin_Area":"Barrackpore","Destination_Area":"Ballygunge","Mode":"Night Bus","Operator":"WBTC Night Service","Distance_km":"11.2","Est_Duration_min":"29","Peak_Frequency_min":"60","Price_INR":"27","Runs_After_10PM":"Yes","Well_Lit_Stops":"No","Last_Mile_Walk_m":"500","Safety_Score_1to10":"3.5","Safety_Weighted_Score":"12.1","Nearest_Police_Station_Origin":"Barrackpore PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Ballygunge PS"},{"Route_ID":"RT-092","Origin_Area":"Howrah Station","Destination_Area":"Salt Lake Sector V","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"5.1","Est_Duration_min":"9","Peak_Frequency_min":"8","Price_INR":"10","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"150","Safety_Score_1to10":"3.5","Safety_Weighted_Score":"38.9","Nearest_Police_Station_Origin":"Howrah GRP PS (railway police)","Nearest_Police_Station_Destination":"Electronics Complex PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-093","Origin_Area":"Behala Chowrasta","Destination_Area":"Ballygunge","Mode":"AC Bus","Operator":"WBTC (Volvo)","Distance_km":"12.2","Est_Duration_min":"49","Peak_Frequency_min":"20","Price_INR":"43","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"100","Safety_Score_1to10":"6.7","Safety_Weighted_Score":"13.7","Nearest_Police_Station_Origin":"Behala PS","Nearest_Police_Station_Destination":"Ballygunge PS"},{"Route_ID":"RT-094","Origin_Area":"Howrah Station","Destination_Area":"Park Street","Mode":"Auto-rickshaw","Operator":"Local Auto Union","Distance_km":"4.9","Est_Duration_min":"19","Peak_Frequency_min":"5","Price_INR":"40","Runs_After_10PM":"Yes","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"50","Safety_Score_1to10":"7.3","Safety_Weighted_Score":"38.4","Nearest_Police_Station_Origin":"Howrah GRP PS (railway police)","Nearest_Police_Station_Destination":"Park Street PS"},{"Route_ID":"RT-095","Origin_Area":"Barrackpore","Destination_Area":"New Town Action Area I","Mode":"Metro","Operator":"Kolkata Metro Rail","Distance_km":"19.2","Est_Duration_min":"38","Peak_Frequency_min":"7","Price_INR":"44","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"200","Safety_Score_1to10":"3.4","Safety_Weighted_Score":"8.9","Nearest_Police_Station_Origin":"Barrackpore PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"New Town PS (Bidhannagar Commissionerate)"},{"Route_ID":"RT-096","Origin_Area":"Kavi Subhash","Destination_Area":"Dakshineswar","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"30.0","Est_Duration_min":"53","Peak_Frequency_min":"7","Price_INR":"25","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"12.5","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Dakshineswar PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-097","Origin_Area":"Esplanade","Destination_Area":"Dum Dum","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"9.6","Est_Duration_min":"17","Peak_Frequency_min":"7","Price_INR":"15","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"39.7","Nearest_Police_Station_Origin":"New Market PS","Nearest_Police_Station_Destination":"Dum Dum PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-098","Origin_Area":"Kavi Subhash","Destination_Area":"Shyambazar","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"24.0","Est_Duration_min":"42","Peak_Frequency_min":"7","Price_INR":"25","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"15.7","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Shyampukur PS"},{"Route_ID":"RT-099","Origin_Area":"Rabindra Sarobar","Destination_Area":"Noapara","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"19.2","Est_Duration_min":"34","Peak_Frequency_min":"7","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"19.9","Nearest_Police_Station_Origin":"Lake PS","Nearest_Police_Station_Destination":"Noapara PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-100","Origin_Area":"Netaji Bhawan","Destination_Area":"Belgachia","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"13.2","Est_Duration_min":"23","Peak_Frequency_min":"7","Price_INR":"15","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"200","Safety_Score_1to10":"6.9","Safety_Weighted_Score":"30.0","Nearest_Police_Station_Origin":"Elgin PS","Nearest_Police_Station_Destination":"Chitpur PS"},{"Route_ID":"RT-101","Origin_Area":"Kavi Subhash","Destination_Area":"Park Street","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"15.6","Est_Duration_min":"28","Peak_Frequency_min":"7","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"24.1","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Park Street PS"},{"Route_ID":"RT-102","Origin_Area":"Kavi Subhash","Destination_Area":"Central","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"19.2","Est_Duration_min":"34","Peak_Frequency_min":"7","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"19.4","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Bowbazar PS"},{"Route_ID":"RT-103","Origin_Area":"Gitanjali","Destination_Area":"Maidan","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"9.6","Est_Duration_min":"17","Peak_Frequency_min":"7","Price_INR":"15","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"39.7","Nearest_Police_Station_Origin":"Regent Park PS","Nearest_Police_Station_Destination":"Maidan PS"},{"Route_ID":"RT-104","Origin_Area":"Babughat","Destination_Area":"Narayanpur","Mode":"Non-AC Bus","Operator":"WBTC (Route 217 Express)","Distance_km":"15.0","Est_Duration_min":"50","Peak_Frequency_min":"20","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"10.2","Nearest_Police_Station_Origin":"Hastings PS","Nearest_Police_Station_Destination":"Narayanpur PS (Barrackpore Commissionerate)"},{"Route_ID":"RT-105","Origin_Area":"Esplanade","Destination_Area":"Gariahat","Mode":"Tram","Operator":"Calcutta Tram Company (Route 25)","Distance_km":"7.0","Est_Duration_min":"38","Peak_Frequency_min":"35","Price_INR":"7","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.75","Safety_Weighted_Score":"15.1","Nearest_Police_Station_Origin":"New Market PS","Nearest_Police_Station_Destination":"Gariahat PS"},{"Route_ID":"RT-106","Origin_Area":"Ruby General Hospital","Destination_Area":"Gariahat","Mode":"AC Bus","Operator":"AC24 / AC24A (Patuli/Kamalgazi - Howrah)","Distance_km":"5.5","Est_Duration_min":"21","Peak_Frequency_min":"20","Price_INR":"17","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"30.0","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Gariahat PS"},{"Route_ID":"RT-107","Origin_Area":"Ruby General Hospital","Destination_Area":"Rashbehari","Mode":"AC Bus","Operator":"AC24 / AC24A","Distance_km":"6.5","Est_Duration_min":"24","Peak_Frequency_min":"20","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"26.3","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Kalighat PS"},{"Route_ID":"RT-108","Origin_Area":"Howrah Station","Destination_Area":"Gariahat","Mode":"AC Bus","Operator":"AC6 (Garia - Howrah)","Distance_km":"14.0","Est_Duration_min":"53","Peak_Frequency_min":"20","Price_INR":"42","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.1","Safety_Weighted_Score":"11.5","Nearest_Police_Station_Origin":"Howrah GRP PS (railway police)","Nearest_Police_Station_Destination":"Gariahat PS"},{"Route_ID":"RT-109","Origin_Area":"Park Street","Destination_Area":"Rashbehari","Mode":"AC Bus","Operator":"AC6 / C5 (Garia - Howrah corridor)","Distance_km":"5.0","Est_Duration_min":"19","Peak_Frequency_min":"20","Price_INR":"15","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"33.2","Nearest_Police_Station_Origin":"Park Street PS","Nearest_Police_Station_Destination":"Kalighat PS"},{"Route_ID":"RT-110","Origin_Area":"Howrah Station","Destination_Area":"Rashbehari","Mode":"Non-AC Bus","Operator":"C5 (Garia Station - Howrah Station)","Distance_km":"12.0","Est_Duration_min":"51","Peak_Frequency_min":"15","Price_INR":"19","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"10.0","Nearest_Police_Station_Origin":"Howrah GRP PS (railway police)","Nearest_Police_Station_Destination":"Kalighat PS"},{"Route_ID":"RT-111","Origin_Area":"Dum Dum","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"C12 (Garia Station - Dum Dum 7 Tank)","Distance_km":"17.0","Est_Duration_min":"73","Peak_Frequency_min":"15","Price_INR":"27","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"7.0","Nearest_Police_Station_Origin":"Dum Dum PS (Barrackpore Commissionerate)","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-112","Origin_Area":"Moulali","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"C12","Distance_km":"6.0","Est_Duration_min":"26","Peak_Frequency_min":"15","Price_INR":"10","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.3","Safety_Weighted_Score":"20.4","Nearest_Police_Station_Origin":"Beniapukur PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-113","Origin_Area":"Sealdah","Destination_Area":"Moulali","Mode":"Non-AC Bus","Operator":"C12","Distance_km":"2.0","Est_Duration_min":"9","Peak_Frequency_min":"15","Price_INR":"8","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"200","Safety_Score_1to10":"5.4","Safety_Weighted_Score":"60.0","Nearest_Police_Station_Origin":"Sealdah GRP PS (railway police)","Nearest_Police_Station_Destination":"Beniapukur PS"},{"Route_ID":"RT-114","Origin_Area":"Shyambazar","Destination_Area":"Moulali","Mode":"Non-AC Bus","Operator":"C12","Distance_km":"5.0","Est_Duration_min":"21","Peak_Frequency_min":"15","Price_INR":"8","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.3","Safety_Weighted_Score":"25.2","Nearest_Police_Station_Origin":"Shyampukur PS","Nearest_Police_Station_Destination":"Beniapukur PS"},{"Route_ID":"RT-115","Origin_Area":"Kamalgazi","Destination_Area":"Gariahat","Mode":"AC Bus","Operator":"M8/1 (Salt Lake Sastha Bhawan - Sonarpur Station)","Distance_km":"15.0","Est_Duration_min":"56","Peak_Frequency_min":"30","Price_INR":"45","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.1","Safety_Weighted_Score":"10.9","Nearest_Police_Station_Origin":"Sonarpur PS (South 24 Parganas)","Nearest_Police_Station_Destination":"Gariahat PS"},{"Route_ID":"RT-116","Origin_Area":"Gariahat","Destination_Area":"Moulali","Mode":"AC Bus","Operator":"M8/1","Distance_km":"7.0","Est_Duration_min":"26","Peak_Frequency_min":"30","Price_INR":"21","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"24.2","Nearest_Police_Station_Origin":"Gariahat PS","Nearest_Police_Station_Destination":"Beniapukur PS"},{"Route_ID":"RT-117","Origin_Area":"Garia","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"JM2 (Malancha - Kolkata Station)","Distance_km":"7.0","Est_Duration_min":"30","Peak_Frequency_min":"30","Price_INR":"11","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"17.0","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-118","Origin_Area":"Gariahat","Destination_Area":"Behala","Mode":"Non-AC Bus","Operator":"S3W (Joka - Ecospace/Aliah University)","Distance_km":"9.0","Est_Duration_min":"39","Peak_Frequency_min":"20","Price_INR":"14","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"13.1","Nearest_Police_Station_Origin":"Gariahat PS","Nearest_Police_Station_Destination":"Behala PS"},{"Route_ID":"RT-119","Origin_Area":"Ruby General Hospital","Destination_Area":"Behala","Mode":"Non-AC Bus","Operator":"S3W","Distance_km":"14.0","Est_Duration_min":"60","Peak_Frequency_min":"20","Price_INR":"22","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"8.5","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Behala PS"},{"Route_ID":"RT-120","Origin_Area":"Rashbehari","Destination_Area":"Behala","Mode":"Non-AC Bus","Operator":"CSTC (RB Avenue - Behala Tram Depot)","Distance_km":"6.0","Est_Duration_min":"11","Peak_Frequency_min":"15","Price_INR":"24","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"46.4","Nearest_Police_Station_Origin":"Kalighat PS","Nearest_Police_Station_Destination":"Behala PS"},{"Route_ID":"RT-121","Origin_Area":"Park Street","Destination_Area":"Behala","Mode":"Non-AC Bus","Operator":"CSTC (Esplanade Mayo Road - Behala Tram Depot)","Distance_km":"9.2","Est_Duration_min":"22","Peak_Frequency_min":"15","Price_INR":"33","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"23.2","Nearest_Police_Station_Origin":"Park Street PS","Nearest_Police_Station_Destination":"Behala PS"},{"Route_ID":"RT-122","Origin_Area":"Park Street","Destination_Area":"Behala (via Kalighat)","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC)","Distance_km":"4.0","Est_Duration_min":"11","Peak_Frequency_min":"10","Price_INR":"14","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"6.3","Safety_Weighted_Score":"57.3","Nearest_Police_Station_Origin":"Park Street PS","Nearest_Police_Station_Destination":"Behala PS"},{"Route_ID":"RT-123","Origin_Area":"Sealdah","Destination_Area":"Budge Budge","Mode":"Local Train","Operator":"Eastern Railway (Sealdah-Budge Budge Local)","Distance_km":"26.0","Est_Duration_min":"52","Peak_Frequency_min":"60","Price_INR":"10","Runs_After_10PM":"Yes","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"400","Safety_Score_1to10":"7.3","Safety_Weighted_Score":"14.0","Nearest_Police_Station_Origin":"Sealdah GRP PS (railway police)","Nearest_Police_Station_Destination":"Budge Budge PS (South 24 Parganas)"},{"Route_ID":"RT-124","Origin_Area":"Ruby General Hospital","Destination_Area":"Joka","Mode":"Non-AC Bus","Operator":"Route 131 (Joka - Ruby Hospital)","Distance_km":"18.0","Est_Duration_min":"77","Peak_Frequency_min":"30","Price_INR":"29","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"350","Safety_Score_1to10":"1.5","Safety_Weighted_Score":"1.9","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Thakurpukur PS"},{"Route_ID":"RT-125","Origin_Area":"Gariahat","Destination_Area":"Joka","Mode":"Non-AC Bus","Operator":"S3W (Joka - Ecospace corridor)","Distance_km":"12.0","Est_Duration_min":"51","Peak_Frequency_min":"20","Price_INR":"19","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"300","Safety_Score_1to10":"1.6","Safety_Weighted_Score":"3.1","Nearest_Police_Station_Origin":"Gariahat PS","Nearest_Police_Station_Destination":"Thakurpukur PS"},{"Route_ID":"RT-126","Origin_Area":"Baghbazar","Destination_Area":"Garia","Mode":"Non-AC Bus","Operator":"S-21 (Garia 6 no Bus Stand - Baghbazar)","Distance_km":"18.0","Est_Duration_min":"77","Peak_Frequency_min":"20","Price_INR":"29","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"6.6","Nearest_Police_Station_Origin":"Baghbazar PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-127","Origin_Area":"Karunamoyee","Destination_Area":"Garia","Mode":"Non-AC Bus","Operator":"S-14 (Garia 6 no Bus Stand - Karunamoyee)","Distance_km":"17.0","Est_Duration_min":"73","Peak_Frequency_min":"20","Price_INR":"27","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"7.0","Nearest_Police_Station_Origin":"Bidhannagar (South) PS","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-128","Origin_Area":"Barasat","Destination_Area":"Garia","Mode":"AC Bus","Operator":"AC-37 (Garia 6 no Bus Stand - Barasat)","Distance_km":"22.0","Est_Duration_min":"83","Peak_Frequency_min":"30","Price_INR":"66","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.1","Safety_Weighted_Score":"7.3","Nearest_Police_Station_Origin":"Barasat PS (North 24 Parganas)","Nearest_Police_Station_Destination":"Patuli PS"},{"Route_ID":"RT-129","Origin_Area":"Kavi Subhash","Destination_Area":"Ruby (Hemanta Mukhopadhyay)","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC) - Orange Line","Distance_km":"5.4","Est_Duration_min":"15","Peak_Frequency_min":"12","Price_INR":"20","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"6.75","Safety_Weighted_Score":"45.0","Nearest_Police_Station_Origin":"Patuli PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-130","Origin_Area":"Kalighat","Destination_Area":"Ruby (Hemanta Mukhopadhyay)","Mode":"Metro","Operator":"Kolkata Metro Rail (KMRC) - Orange + Blue Line","Distance_km":"15.0","Est_Duration_min":"32","Peak_Frequency_min":"12","Price_INR":"40","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"6.6","Safety_Weighted_Score":"20.6","Nearest_Police_Station_Origin":"Kalighat PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-131","Origin_Area":"Esplanade","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"S24 / C26 (Kamalgazi/Baruipur - Howrah)","Distance_km":"9.0","Est_Duration_min":"39","Peak_Frequency_min":"10","Price_INR":"14","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"13.1","Nearest_Police_Station_Origin":"New Market PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-132","Origin_Area":"Howrah Station","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"S24 / C26","Distance_km":"16.0","Est_Duration_min":"69","Peak_Frequency_min":"10","Price_INR":"26","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"7.4","Nearest_Police_Station_Origin":"Howrah GRP PS (railway police)","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-133","Origin_Area":"Netaji Subhas Chandra Bose Intl Airport","Destination_Area":"Ruby General Hospital","Mode":"AC Bus","Operator":"AC-37A / AC-37C (Airport - Garia Bus Stand)","Distance_km":"16.0","Est_Duration_min":"60","Peak_Frequency_min":"20","Price_INR":"48","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"350","Safety_Score_1to10":"6.0","Safety_Weighted_Score":"10.0","Nearest_Police_Station_Origin":"Airport PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-134","Origin_Area":"Sealdah","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"C12 (Garia Station - Dum Dum 7 Tank)","Distance_km":"8.0","Est_Duration_min":"34","Peak_Frequency_min":"15","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"15.0","Nearest_Police_Station_Origin":"Sealdah GRP PS (railway police)","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-135","Origin_Area":"Amtala","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"Amtala - Ruby Hospital","Distance_km":"20.0","Est_Duration_min":"86","Peak_Frequency_min":"30","Price_INR":"32","Runs_After_10PM":"No","Well_Lit_Stops":"No","Last_Mile_Walk_m":"350","Safety_Score_1to10":"1.5","Safety_Weighted_Score":"1.7","Nearest_Police_Station_Origin":"Amtala PS (South 24 Parganas)","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-136","Origin_Area":"Mukundapur","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"24A/1 (Mukundapur - Howrah, private)","Distance_km":"3.0","Est_Duration_min":"13","Peak_Frequency_min":"10","Price_INR":"8","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.25","Safety_Weighted_Score":"40.4","Nearest_Police_Station_Origin":"Purba Jadavpur PS","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-137","Origin_Area":"New Town","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"S3W (Joka - Ecospace/Aliah University)","Distance_km":"8.0","Est_Duration_min":"34","Peak_Frequency_min":"20","Price_INR":"13","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"300","Safety_Score_1to10":"5.1","Safety_Weighted_Score":"15.0","Nearest_Police_Station_Origin":"New Town PS (Bidhannagar Commissionerate)","Nearest_Police_Station_Destination":"Anandapur PS"},{"Route_ID":"RT-138","Origin_Area":"Science City","Destination_Area":"Ruby General Hospital","Mode":"Non-AC Bus","Operator":"Shared corridor (JM2 / C12 / S3W / AC-37A)","Distance_km":"3.0","Est_Duration_min":"13","Peak_Frequency_min":"5","Price_INR":"8","Runs_After_10PM":"No","Well_Lit_Stops":"Yes","Last_Mile_Walk_m":"250","Safety_Score_1to10":"5.25","Safety_Weighted_Score":"40.4","Nearest_Police_Station_Origin":"Anandapur PS","Nearest_Police_Station_Destination":"Anandapur PS"}];
+const DATASET_SIZE = TRANSIT_DATASET.length;
+ 
+const DATASET_ORIGINS = [...new Set(TRANSIT_DATASET.map(r => r.Origin_Area))].sort();
+const DATASET_DESTINATIONS = [...new Set(TRANSIT_DATASET.map(r => r.Destination_Area))].sort();
+const DATASET_LOCATIONS = [...new Set([...DATASET_ORIGINS, ...DATASET_DESTINATIONS])].sort();
+ 
+/* ---------- state ---------- */
+let locations = DATASET_LOCATIONS.slice();
+let origin = 'Garia';
+let destination = 'Esplanade';
+let pickerTarget = 'origin';
+let currentOptions = [];
+let selectedIndex = 0;
+let tickHandle = null;
+let contacts = [
+  {name:'Mom', phone:'', selected:true},
+  {name:'Dad', phone:'', selected:true}
+];
+let selectedRoute = null;
+ 
+/* ---------- cross-account in-app alerts (no WhatsApp/SMS/email) ----------
+   Two people, two installs of this same page — one on "You", one on
+   "Mom's view". Open two tabs/windows of this page on ONE device: one
+   left on "You", the other switched to "Mom's view". An SOS, trip start,
+   or trip end on the commuter side pops up as a real in-app alert on
+   the contact side, live — this is what actually demos, since it needs
+   no paid SMS/WhatsApp credits and no separate backend endpoint.
+   This only syncs across tabs/windows on the SAME device/browser. */
+const APP_USER_NAME = 'Sanket'; // whoever's phone the "You" role represents in your demo
+let currentRole = 'user';
+let lastUserScreen = 1;
+let alertsInbox = [];
+let selectedAlertIndex = null;
+let liveTickHandle = null;
+ 
+const alertChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('waysahead_alerts') : null;
+if(alertChannel) alertChannel.onmessage = e => handleIncomingAlert(e.data);
+window.addEventListener('storage', e => {
+  if(e.key === 'waysahead_alert_broadcast' && e.newValue){
+    try{ handleIncomingAlert(JSON.parse(e.newValue)); }catch(err){}
+  }
+});
+ 
+function mockPoliceCall(btn){
+  const original = btn.textContent;
+  btn.textContent = 'Calling… (demo only)';
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+}
+ 
+function broadcastAlert(payload){
+  payload.time = Date.now();
+  payload.id = payload.time + '-' + Math.random().toString(36).slice(2, 6);
+  if(alertChannel) alertChannel.postMessage(payload);
+  try{ localStorage.setItem('waysahead_alert_broadcast', JSON.stringify(payload)); }catch(e){}
+  handleIncomingAlert(payload); // deliver in this same tab too, for one-device demos
+}
+function handleIncomingAlert(payload){
+  if(payload.id && alertsInbox.some(a => a.id === payload.id)) return; // dedupe
+  alertsInbox.unshift(payload);
+  if(currentRole === 'contact') renderContactInbox();
+  else document.getElementById('contactBadge').classList.add('show');
+}
+function timeAgo(t){
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  return s < 60 ? s + 's ago' : Math.round(s / 60) + 'm ago';
+}
+function setRole(role){
+  currentRole = role;
+  document.getElementById('roleBtn_user').classList.toggle('on', role === 'user');
+  document.getElementById('roleBtn_contact').classList.toggle('on', role === 'contact');
+  toggleOverlay(false);
+  if(role === 'contact'){
+    document.getElementById('contactBadge').classList.remove('show');
+    renderContactInbox();
+    showScreen('c1');
+  } else {
+    showScreen('s' + lastUserScreen);
+  }
+}
+function renderContactInbox(){
+  const list = document.getElementById('contactInboxList');
+  if(!alertsInbox.length){
+    list.innerHTML = '<div class="alert-empty">No alerts yet.<br>You\'ll see it here the moment a trip starts or an SOS is sent — right in the app, no WhatsApp or SMS needed.</div>';
+    return;
+  }
+  list.innerHTML = alertsInbox.map((a, i) => {
+    const isSOS = a.type === 'sos';
+    const label = isSOS ? '⚠ Emergency SOS' : a.type === 'trip_start' ? 'Trip started' : 'Arrived safely';
+    const route = a.origin ? `${esc(a.origin)} → ${a.destination ? esc(a.destination) : ''}` : '';
+    return `<div class="alert-card ${isSOS?'emergency':''}" onclick="openAlert(${i})">
+      <span class="alert-dot"></span>
+      <div><h3>${esc(a.from)} · ${label}</h3>
+      <div class="meta">${route}</div>
+      <div class="alert-time">${timeAgo(a.time)}</div></div>
+    </div>`;
+  }).join('');
+}
+function openAlert(i){
+  selectedAlertIndex = i;
+  const a = alertsInbox[i];
+  document.getElementById('c2Title').textContent = a.type === 'sos' ? a.from + ' — Emergency Alert' : a.from + "'s trip";
+  document.getElementById('c2Sub').textContent = a.origin ? `${a.origin} → ${a.destination || ''}` : '';
+  document.getElementById('c2Track').innerHTML =
+    a.type === 'sos' ? `<div class="tstep now"><b>Emergency alert sent</b><span>Live location shared with ${esc(a.police || 'the nearest police station')} and you</span></div>` :
+    a.type === 'trip_start' ? `<div class="tstep now"><b>${a.opt ? esc(a.opt.label) + ' — ' + esc(a.opt.routeNum) : 'On the move'}</b><span>${a.opt ? 'Fare ₹' + a.opt.fare : ''} · ETA ${a.totalMins || '?'} min</span></div>` :
+    `<div class="tstep done"><b>Arrived safely</b><span>Trip complete · fare ₹${a.fare || '?'}</span></div>`;
+  gc('c2');
+  if(liveTickHandle) clearInterval(liveTickHandle);
+  liveTickHandle = setInterval(() => {
+    const el = document.getElementById('c2LastUpdate');
+    if(el && alertsInbox[selectedAlertIndex]) el.textContent = timeAgo(alertsInbox[selectedAlertIndex].time);
+  }, 1000);
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function gc(id){ showScreen(id); }
+ 
+/* ---------- helpers ---------- */
+function esc(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[c]));
+}
+ 
+function modeClass(mode){
+  const m = mode.toLowerCase();
+  return (m.includes('bus') || m.includes('train') || m.includes('metro') || m.includes('tram'))
+    ? 'bus' : 'auto';
+}
+ 
+function modeIcon(mode){
+  const m = mode.toLowerCase();
+  if(m.includes('bus') || m.includes('train') || m.includes('metro') || m.includes('tram')) return 'icon-bus';
+  return 'icon-auto';
+}
+ 
+function routeScoreLabel(score){
+  if(score >= 35) return 'Strong safety-weighted score';
+  if(score >= 20) return 'Moderate safety-weighted score';
+  return 'Lower safety-weighted score';
+}
+ 
+function formatMinutes(min){
+  return `${Number(min) || 0} min`;
+}
+ 
+function toNumber(value, fallback=0){
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+ 
+function formatKm(value, decimals=2){
+  const km = toNumber(value);
+  return `${km.toFixed(decimals)} km`;
+}
+ 
+function formatWalkKm(value){
+  return formatKm(toNumber(value) / 1000, 2);
+}
+ 
+function updateHomeSignals(){
+  const matches = TRANSIT_DATASET.filter(r =>
+    r.Origin_Area === origin && r.Destination_Area === destination
+  );
+ 
+  if(matches.length){
+    // Dataset values may arrive as strings from the spreadsheet. Always coerce
+    // numeric fields before arithmetic so string concatenation cannot produce
+    // huge distances or NaN safety values.
+    const avgWalk = matches.reduce((a,r)=>a+toNumber(r.Last_Mile_Walk_m),0)/matches.length;
+    const avgSafety = matches.reduce((a,r)=>a+toNumber(r.Safety_Score_1to10),0)/matches.length;
+    document.getElementById('stopBusName').textContent = formatWalkKm(avgWalk);
+    document.getElementById('stopAutoName').textContent = `${avgSafety.toFixed(1)} / 10`;
+  }else{
+    document.getElementById('stopBusName').textContent = '—';
+    document.getElementById('stopAutoName').textContent = '—';
+  }
+}
+ 
+/* ---------- location picker ---------- */
+let pickerLocations = [];
+ 
+function openPicker(target){
+  pickerTarget = target === 'destination' ? 'destination' : 'origin';
+  const title = document.getElementById('pickerTitle');
+  const search = document.getElementById('locationSearch');
+  const input = document.getElementById('newLocInput');
+  const current = pickerTarget === 'origin' ? origin : destination;
+ 
+  title.textContent = pickerTarget === 'origin' ? 'Set current location' : 'Choose destination';
+  pickerLocations = [...new Set(pickerTarget === 'origin' ? DATASET_ORIGINS : DATASET_DESTINATIONS)];
+  search.value = '';
+  input.value = '';
+  document.getElementById('locationHint').textContent =
+    `${pickerLocations.length} dataset location${pickerLocations.length===1?'':'s'} available · current: ${current}`;
+ 
+  renderLocationList('');
+  toggleOverlay(true, 'locationOverlay');
+  setTimeout(() => search.focus(), 50);
+}
+ 
+function filterLocations(){
+  const query = document.getElementById('locationSearch').value.trim().toLowerCase();
+  renderLocationList(query);
+}
+ 
+function renderLocationList(query=''){
+  const current = pickerTarget === 'origin' ? origin : destination;
+  const filtered = pickerLocations.filter(loc => loc.toLowerCase().includes(query));
+  const list = document.getElementById('locationList');
+ 
+  if(!filtered.length){
+    list.innerHTML = `<div class="location-empty">No matching dataset location.<br>Try another search or add a custom place below.</div>`;
+    return;
+  }
+ 
+  list.innerHTML = filtered.map(loc =>
+    `<button type="button" class="loc-item ${loc===current?'location-current':''}" onclick='pickLocation(${JSON.stringify(loc)})'>`+
+    `${esc(loc)}${loc===current?' <span style="float:right;color:var(--teal);font-size:10px;font-weight:700">CURRENT</span>':''}</button>`
+  ).join('');
+}
+ 
+function pickLocation(loc){
+  loc = String(loc);
+  if(pickerTarget === 'origin') origin = loc;
+  else destination = loc;
+ 
+  document.getElementById('originText').textContent = origin;
+  document.getElementById('destText').textContent = destination;
+  updateHomeSignals();
+  toggleOverlay(false, 'locationOverlay');
+}
+ 
+function swapLocations(){
+  const temp = origin;
+  origin = destination;
+  destination = temp;
+  document.getElementById('originText').textContent = origin;
+  document.getElementById('destText').textContent = destination;
+  updateHomeSignals();
+}
+ 
+function addLocation(){
+  const input = document.getElementById('newLocInput');
+  const val = input.value.trim();
+  if(!val) return;
+ 
+  if(!locations.includes(val)) locations.push(val);
+  pickLocation(val);
+  input.value = '';
+}
+ 
+/* ---------- dataset route engine ---------- */
+function generateOptions(){
+  const list = document.getElementById('optionsList');
+  const count = document.getElementById('routeCount');
+ 
+  if(tickHandle) clearInterval(tickHandle);
+ 
+  let matches = TRANSIT_DATASET.filter(r =>
+    r.Origin_Area === origin &&
+    r.Destination_Area === destination
+  );
+ 
+  if(!matches.length){
+    currentOptions = [];
+    count.textContent = 'No exact origin → destination route exists in the embedded dataset.';
+    list.innerHTML = `
+      <div class="card empty-state" style="cursor:default;">
+        <h3>No direct dataset route</h3>
+        <p>Try another destination from <strong>${esc(origin)}</strong>, or change the origin. The prototype will not invent a route that is not present in the dataset.</p>
+      </div>`;
+    document.getElementById('distPill').textContent = 'No direct route';
+    document.getElementById('stopBusName').textContent = '—';
+    document.getElementById('stopAutoName').textContent = '—';
+    return;
+  }
+ 
+  /* Primary ordering uses the dataset's own Safety_Weighted_Score.
+     Ties then prefer shorter duration, lower fare, and shorter last-mile walk. */
+  matches = matches.slice().sort((a,b) =>
+    toNumber(b.Safety_Weighted_Score) - toNumber(a.Safety_Weighted_Score) ||
+    toNumber(a.Est_Duration_min) - toNumber(b.Est_Duration_min) ||
+    toNumber(a.Price_INR) - toNumber(b.Price_INR) ||
+    toNumber(a.Last_Mile_Walk_m) - toNumber(b.Last_Mile_Walk_m)
+  );
+ 
+  currentOptions = matches.map((r, index) => ({
+    ...r,
+    type: modeClass(r.Mode),
+    icon: modeIcon(r.Mode),
+    remaining: toNumber(r.Peak_Frequency_min) * 60,
+    recommended: index === 0
+  }));
+ 
+  selectedIndex = 0;
+  selectedRoute = currentOptions[0];
+ 
+  const avgDistance = matches.reduce((a,r)=>a+toNumber(r.Distance_km),0)/matches.length;
+  document.getElementById('distPill').textContent =
+    `${avgDistance.toFixed(1)} km · ${matches.length} option${matches.length>1?'s':''}`;
+ 
+  const avgWalk = matches.reduce((a,r)=>a+toNumber(r.Last_Mile_Walk_m),0)/matches.length;
+  const avgSafety = matches.reduce((a,r)=>a+toNumber(r.Safety_Score_1to10),0)/matches.length;
+  document.getElementById('stopBusName').textContent = formatWalkKm(avgWalk);
+  document.getElementById('stopAutoName').textContent = `${avgSafety.toFixed(1)} / 10`;
+ 
+  count.textContent =
+    `${matches.length} dataset route${matches.length>1?'s':''} · sorted by Safety_Weighted_Score`;
+ 
+  renderOptions();
+  startTicking();
+}
+ 
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + ':' + String(s).padStart(2,'0');
+}
+ 
+function renderOptions(){
+  const list = document.getElementById('optionsList');
+ 
+  list.innerHTML = currentOptions.map((o,i) => {
+    const night = o.Runs_After_10PM === 'Yes';
+    const lit = o.Well_Lit_Stops === 'Yes';
+ 
+    return `
+      <div class="card ${i===selectedIndex?'selected':''}" onclick="selectOption(${i})">
+        <div class="card-row">
+          <div style="min-width:0">
+            <span class="tag ${o.type}">
+              <svg class="icon" style="width:11px;height:11px"><use href="#${o.icon}"/></svg>
+              ${esc(o.Mode)}
+            </span>
+            ${o.recommended ? '<span class="tag" style="background:rgba(211,167,92,.15);color:var(--gold);margin-left:4px">Dataset pick</span>' : ''}
+            <h3>${esc(o.Route_ID)} · ${esc(o.Origin_Area)} → ${esc(o.Destination_Area)}</h3>
+            <div class="operator">${esc(o.Operator)}</div>
+            <div class="route-extra">
+              <span class="mini-stat"><strong>${formatMinutes(o.Est_Duration_min)}</strong> duration</span>
+              <span class="mini-stat"><strong>every ${o.Peak_Frequency_min}m</strong></span>
+              <span class="mini-stat"><strong>${o.Last_Mile_Walk_m}m</strong> last mile</span>
+              <span class="mini-stat"><strong>${lit ? 'Well lit' : 'Not well lit'}</strong></span>
+              <span class="mini-stat"><strong>${night ? 'After 10PM' : 'No 10PM+'}</strong></span>
+            </div>
+            <div class="safety-score">Safety ${toNumber(o.Safety_Score_1to10).toFixed(1)}/10 · weighted ${toNumber(o.Safety_Weighted_Score).toFixed(1)}</div>
+            <div class="meta">Next scheduled window in <span class="countdown" id="cd-${i}">${fmtTime(o.remaining)}</span> · ${routeScoreLabel(toNumber(o.Safety_Weighted_Score))}</div>
+          </div>
+          <div class="price">₹${o.Price_INR}<small>fare</small></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+ 
+function selectOption(i){
+  selectedIndex = i;
+  selectedRoute = currentOptions[i] || null;
+  renderOptions();
+}
+ 
+function startTicking(){
+  if(tickHandle) clearInterval(tickHandle);
+ 
+  tickHandle = setInterval(() => {
+    currentOptions.forEach((o,i) => {
+      const freqSec = toNumber(o.Peak_Frequency_min) * 60 || 60;
+      o.remaining = o.remaining > 0 ? o.remaining - 1 : freqSec - 1;
+      const el = document.getElementById('cd-'+i);
+      if(el) el.textContent = fmtTime(o.remaining);
+    });
+  }, 1000);
+}
+ 
+/* ---------- trusted contacts ---------- */
+function selectedContactNames(){
+  return contacts.filter(c=>c.selected).map(c=>c.name);
+}
+ 
+function namesText(){
+  const n = selectedContactNames();
+  return n.length ? n.join(' and ') : 'No one';
+}
+ 
+function renderContacts(){
+  document.getElementById('contactChips').innerHTML = contacts.map((c,i) => `
+    <button type="button" class="chip ${c.selected?'on':''}" onclick="toggleContact(${i})">
+      <span class="chip-av">${esc(c.name[0].toUpperCase())}</span>${esc(c.name)}
+    </button>`).join('');
+}
+ 
+function toggleContact(i){
+  contacts[i].selected = !contacts[i].selected;
+  renderContacts();
+}
+ 
+function addContact(){
+  const input = document.getElementById('newContactInput');
+  const val = input.value.trim();
+  if(!val) return;
+ 
+  const parts = val.split('|').map(x=>x.trim());
+  contacts.push({
+    name: parts[0],
+    phone: parts[1] || '',
+    selected: true
+  });
+ 
+  input.value = '';
+  renderContacts();
+}
+ 
+function showSosError(message){
+  const box = document.getElementById('sosErrorBox');
+  box.textContent = message;
+  box.classList.add('show');
+}
+function hideSosError(){
+  document.getElementById('sosErrorBox').classList.remove('show');
+}
+ 
+async function sendSOS(){
+  hideSosError();
+  const names = selectedContactNames();
+  const nearestPoliceStation = selectedRoute
+    ? (selectedRoute.Nearest_Police_Station_Origin || selectedRoute.Nearest_Police_Station_Destination || 'the nearest police station')
+    : 'the nearest police station';
+ 
+  document.getElementById('sosContactsName').textContent =
+    names.length ? names.join(', ') : 'Trusted contact';
+  document.getElementById('sosPoliceStation').textContent = nearestPoliceStation;
+ 
+  // Fires the in-app alert immediately — this is what actually demos live,
+  // independent of whether the real backend/Twilio call below succeeds.
+  broadcastAlert({ type:'sos', from: APP_USER_NAME, origin, destination, police: nearestPoliceStation });
+ 
+  const btn = document.querySelector('#sosOverlay .btn-danger');
+  if(btn){ btn.disabled = true; btn.textContent = 'Sending alert…'; }
+ 
+  const coords = latestPosition?.coords || {};
+  const payload = {
+    contact_name: names.length ? names.join(', ') : 'Trusted contact',
+    origin: origin || 'Current location',
+    destination: destination || 'Unknown destination',
+    latitude: Number.isFinite(coords.latitude) ? coords.latitude : null,
+    longitude: Number.isFinite(coords.longitude) ? coords.longitude : null,
+    accuracy_m: Number.isFinite(coords.accuracy) ? coords.accuracy : null,
+    trip_id: window._backendTripId || window._lastTrip?.routeId || 'WAYSAHEAD-DEMO'
+  };
+ 
+  try{
+    const res = await fetch('http://127.0.0.1:8000/trip/sos', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.success){
+      throw new Error(data.detail || data.error || 'The alert could not be sent.');
+    }
+ 
+    document.getElementById('sosContactsName').textContent =
+      `${names.length ? names.join(', ') : 'Trusted contact'} · SMS sent`;
+    go(4);
+  }catch(err){
+    console.error('SOS send failed:', err);
+    // In-app alert already fired above, so the demo isn't blocked by this.
+    // This message only matters once the real backend is wired in.
+    showSosError(`Real backend SMS not sent (${err.message}). The in-app alert to "Mom's view" still went through — check the tab/window on that role.`);
+    if(btn){ btn.disabled = false; btn.textContent = 'Send alert'; }
+    return;
+  }
+  if(btn){ btn.disabled = false; btn.textContent = 'Send alert'; }
+}
+ 
+/* ---------- trip flow ---------- */
+function startTrip(){
+  const opt = currentOptions[selectedIndex];
+  if(!opt) return;
+ 
+  selectedRoute = opt;
+ 
+  document.getElementById('tripTrack').innerHTML = `
+    <div class="tstep done">
+      <b>Leave ${esc(origin)}</b>
+      <span>Start · dataset route ${esc(opt.Route_ID)}</span>
+    </div>
+    <div class="tstep now">
+      <b>${esc(opt.Mode)} — ${esc(opt.Operator)}</b>
+      <span>Fare ₹${opt.Price_INR} · estimated ${opt.Est_Duration_min} min</span>
+    </div>
+    <div class="tstep">
+      <b>Arrive at ${esc(destination)}</b>
+      <span>Last-mile walk · ${opt.Last_Mile_Walk_m} m</span>
+    </div>`;
+ 
+  document.getElementById('routeWarnText').textContent =
+    `${opt.Well_Lit_Stops === 'Yes' ? 'Well-lit stops' : 'Stops are not marked well-lit'} · ` +
+    `${opt.Runs_After_10PM === 'Yes' ? 'Runs after 10 PM' : 'Does not run after 10 PM'} · ` +
+    `Safety score ${toNumber(opt.Safety_Score_1to10).toFixed(1)}/10.`;
+ 
+  document.getElementById('etaPill').textContent =
+    'ETA ~' + opt.Est_Duration_min + ' min';
+ 
+  document.getElementById('startNotifyText').textContent =
+    `${namesText()} notified you've started this trip`;
+ 
+  const totalMins = toNumber(opt.Est_Duration_min);
+  window._lastTrip = {
+    fare: opt.Price_INR,
+    mins: totalMins,
+    routeId: opt.Route_ID
+  };
+ 
+  broadcastAlert({
+    type: 'trip_start', from: APP_USER_NAME, origin, destination,
+    opt: { label: opt.Mode, routeNum: opt.Route_ID, fare: opt.Price_INR },
+    totalMins
+  });
+ 
+  go(3);
+  initLiveMap();
+  setTimeout(()=>liveMap && liveMap.invalidateSize(), 120);
+  loadJourneyLandmarks();
+  requestLiveLocation();
+}
+ 
+function endTrip(){
+  stopLiveLocation();
+  journeyStopsLoaded = false;
+ 
+  const t = window._lastTrip || {fare:0, mins:0};
+ 
+  document.getElementById('arrivalSummary').textContent =
+    `Total fare ₹${t.fare} · ${t.mins} min · ${t.routeId || 'dataset route'}`;
+ 
+  document.getElementById('arriveNotifyText').textContent =
+    `${namesText()} notified you're home`;
+ 
+  broadcastAlert({ type:'trip_end', from: APP_USER_NAME, destination, fare: t.fare, mins: t.mins });
+ 
+  go(5);
+}
+ 
+ 
+/* ---------- real-time device location ---------- */
+let gpsWatchId = null;
+let latestPosition = null;
+let liveMap = null;
+let liveMarker = null;
+let liveAccuracyCircle = null;
+let liveTrail = null;
+let trailPoints = [];
+let lastMapUpdate = 0;
+let journeyPoints = {start:null, board:null, alight:null, end:null};
+let journeyMarkers = {};
+let journeyLines = [];
+let journeyGeoCache = {};
+let journeyStopsLoaded = false;
+ 
+function initLiveMap(){
+  if(typeof L === 'undefined') return;
+  if(liveMap) return;
+  liveMap = L.map('liveMap', {zoomControl:true, attributionControl:true}).setView([22.5726,88.3639], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(liveMap);
+  liveTrail = L.polyline([], {weight:4, opacity:.85}).addTo(liveMap);
+}
+ 
+function journeyIcon(kind, label){
+  const styles = {
+    start:'background:#4ECDC4;color:#0B1712;border-color:#4ECDC4;',
+    board:'background:#D3A75C;color:#0B1712;border-color:#D3A75C;',
+    alight:'background:#FF5470;color:#fff;border-color:#FF5470;',
+    end:'background:#EAF2EC;color:#0B1712;border-color:#EAF2EC;'
+  };
+  return L.divIcon({className:'journey-marker-icon',html:`<span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:2px solid;box-shadow:0 3px 12px rgba(0,0,0,.35);font-size:10px;font-weight:800;${styles[kind]||styles.end}">${label}</span>`,iconSize:[28,28],iconAnchor:[14,14]});
+}
+ 
+function setJourneyMarker(kind, point, title, meta){
+  if(!liveMap || !point) return;
+  const labels={start:'S',board:'B',alight:'D',end:'E'};
+  const icon=journeyIcon(kind,labels[kind]);
+  if(journeyMarkers[kind]){
+    journeyMarkers[kind].setLatLng(point);
+    journeyMarkers[kind].setIcon(icon);
+  }else{
+    journeyMarkers[kind]=L.marker(point,{icon,zIndexOffset:kind==='end'?900:800}).addTo(liveMap);
+  }
+  journeyMarkers[kind].bindTooltip(`<b>${esc(title)}</b><br><span style="font-size:10px">${esc(meta||'')}</span>`,{direction:'top',offset:[0,-10]});
+}
+ 
+function clearJourneyLayers(){
+  Object.values(journeyMarkers).forEach(m=>{try{liveMap.removeLayer(m);}catch(e){}});
+  journeyMarkers={};
+  journeyLines.forEach(l=>{try{liveMap.removeLayer(l);}catch(e){}});
+  journeyLines=[];
+}
+ 
+function haversineKm(a,b){
+  const R=6371, dLat=(b[0]-a[0])*Math.PI/180, dLon=(b[1]-a[1])*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+ 
+async function geocodeJourneyPlace(name){
+  const key=String(name).trim().toLowerCase();
+  if(journeyGeoCache[key]) return journeyGeoCache[key];
+  const q=encodeURIComponent(`${name}, Kolkata, West Bengal, India`);
+  const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${q}`;
+  const res=await fetch(url,{headers:{'Accept':'application/json'}});
+  if(!res.ok) throw new Error('Geocoding failed');
+  const arr=await res.json();
+  if(!arr.length) throw new Error(`Could not locate ${name}`);
+  const point=[Number(arr[0].lat),Number(arr[0].lon)];
+  const result={point,name:arr[0].display_name};
+  journeyGeoCache[key]=result;
+  return result;
+}
+ 
+function stopQueryForMode(mode){
+  const m=String(mode||'').toLowerCase();
+  if(m.includes('metro')||m.includes('train')) return 'node(around:3000,LAT,LON)["railway"="station"];node(around:3000,LAT,LON)["railway"="halt"];';
+  if(m.includes('tram')) return 'node(around:3000,LAT,LON)["railway"="tram_stop"];';
+  if(m.includes('bus')) return 'node(around:3000,LAT,LON)["highway"="bus_stop"];node(around:3000,LAT,LON)["public_transport"="platform"];';
+  return '';
+}
+ 
+async function findNearestTransitStops(point, mode){
+  const query=stopQueryForMode(mode);
+  if(!query) return [];
+  const lat=point[0], lon=point[1];
+  const body=`[out:json][timeout:20];(${query.replaceAll('LAT',lat).replaceAll('LON',lon)});out center tags;`;
+  const url='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(body);
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('Stop lookup failed');
+  const json=await res.json();
+  return (json.elements||[]).map(e=>{
+    const p=[Number(e.lat ?? e.center?.lat),Number(e.lon ?? e.center?.lon)];
+    const tags=e.tags||{};
+    return {point:p,name:tags.name||tags['name:en']||'Unnamed mapped stop',distance:haversineKm(point,p)};
+  }).filter(x=>Number.isFinite(x.point[0])&&Number.isFinite(x.point[1])).sort((a,b)=>a.distance-b.distance).slice(0,5);
+}
+ 
+function renderJourneyStops(info){
+  const list=document.getElementById('journeyStopsList');
+  const status=document.getElementById('journeyStopsStatus');
+  if(!list) return;
+  const direct=info.direct;
+  const rows=[];
+  rows.push({kind:'start',title:origin,meta:'Start here · trip origin'});
+  if(!direct && info.board){ rows.push({kind:'board',title:info.board.name,meta:`Board ${selectedRoute.Mode} · ${info.board.distance<1?(info.board.distance*1000).toFixed(0)+' m':info.board.distance.toFixed(1)+' km'} from origin`}); }
+  if(!direct && info.alight){ rows.push({kind:'alight',title:info.alight.name,meta:`Get down here · ${info.alight.distance<1?(info.alight.distance*1000).toFixed(0)+' m':info.alight.distance.toFixed(1)+' km'} from destination`}); }
+  rows.push({kind:'end',title:destination,meta:'Destination · finish / last-mile walk'});
+  list.innerHTML=rows.map(r=>`<div class="journey-stop"><i class="journey-stop-dot ${r.kind}"></i><div><b>${esc(r.title)}</b><small>${esc(r.meta)}</small></div></div>`).join('');
+  status.textContent=direct?'Direct pickup → destination':'Boarding + drop-off points found';
+}
+ 
+async function fetchRoadRoute(a,b){
+  // OSRM follows the mapped road network instead of drawing a straight line.
+  // Coordinates are sent as lon,lat as required by the routing API.
+  const url=`https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=false`;
+  const res=await fetch(url,{headers:{'Accept':'application/json'}});
+  if(!res.ok) throw new Error('Road routing failed');
+  const data=await res.json();
+  const coords=data.routes?.[0]?.geometry?.coordinates||[];
+  if(!coords.length) throw new Error('No road route found');
+  return coords.map(([lon,lat])=>[lat,lon]);
+}
+ 
+async function drawNavigationRoute(points){
+  const valid=points.filter(Boolean);
+  if(!liveMap || valid.length<2) return;
+ 
+  // Clear only previously drawn navigation lines; markers remain untouched.
+  journeyLines.forEach(l=>{try{liveMap.removeLayer(l);}catch(e){}});
+  journeyLines=[];
+ 
+  const allRoadPoints=[];
+  for(let i=0;i<valid.length-1;i++){
+    try{
+      const segment=await fetchRoadRoute(valid[i],valid[i+1]);
+      if(segment.length) allRoadPoints.push(...(i ? segment.slice(1) : segment));
+    }catch(err){
+      console.warn('Road segment unavailable:',err);
+      // Keep a visible fallback for this segment if the routing service fails.
+      const fallback=L.polyline([valid[i],valid[i+1]],{
+        color:'#1677FF',weight:5,opacity:.72,dashArray:'9 8',lineCap:'round',lineJoin:'round'
+      }).addTo(liveMap);
+      journeyLines.push(fallback);
+    }
+  }
+ 
+  if(allRoadPoints.length){
+    // White casing + blue route gives the familiar navigation-line appearance.
+    const casing=L.polyline(allRoadPoints,{
+      color:'#FFFFFF',weight:10,opacity:.92,lineCap:'round',lineJoin:'round'
+    }).addTo(liveMap);
+    const blue=L.polyline(allRoadPoints,{
+      color:'#1677FF',weight:6,opacity:.98,lineCap:'round',lineJoin:'round'
+    }).addTo(liveMap);
+    journeyLines.push(casing,blue);
+  }
+ 
+  liveMap.fitBounds(L.latLngBounds(valid),{padding:[40,40],maxZoom:16});
+}
+ 
+async function loadJourneyLandmarks(){
+  if(!selectedRoute || !liveMap) return;
+  const status=document.getElementById('journeyStopsStatus');
+  const note=document.getElementById('journeyStopsNote');
+  status.textContent='Finding start & transport stops…';
+  clearJourneyLayers();
+  journeyPoints={start:null,board:null,alight:null,end:null};
+  try{
+    const startGeo=await geocodeJourneyPlace(origin);
+    await new Promise(r=>setTimeout(r,1100));
+    const endGeo=await geocodeJourneyPlace(destination);
+    journeyPoints.start=startGeo.point; journeyPoints.end=endGeo.point;
+    const direct=!stopQueryForMode(selectedRoute.Mode);
+    let board=null, alight=null;
+    if(!direct){
+      status.textContent='Finding nearest boarding & drop-off stops…';
+      const allStart=await findNearestTransitStops(startGeo.point,selectedRoute.Mode);
+      const allEnd=await findNearestTransitStops(endGeo.point,selectedRoute.Mode);
+      board=allStart[0]||null; alight=allEnd[0]||null;
+      journeyPoints.board=board?.point||null; journeyPoints.alight=alight?.point||null;
+    }
+    setJourneyMarker('start',journeyPoints.start,origin,'Start point');
+    if(board) setJourneyMarker('board',board.point,board.name,'Board here');
+    if(alight) setJourneyMarker('alight',alight.point,alight.name,'Get down here');
+    setJourneyMarker('end',journeyPoints.end,destination,'Destination');
+ 
+    const points=[journeyPoints.start,journeyPoints.board,journeyPoints.alight,journeyPoints.end].filter(Boolean);
+    if(points.length>1){
+      status.textContent='Drawing navigation route…';
+      await drawNavigationRoute(points);
+    }
+ 
+    renderJourneyStops({direct,board,alight});
+    journeyStopsLoaded=true;
+    note.textContent=direct
+      ? `${selectedRoute.Mode} is treated as direct pickup → destination; the blue line follows mapped roads.`
+      : 'The blue line follows mapped roads between your start, nearest boarding stop, nearest drop-off stop, and destination. Transit-stop coordinates are approximated from OpenStreetMap because the dataset does not contain exact stop coordinates.';
+  }catch(err){
+    console.warn('Journey landmark lookup:',err);
+    journeyPoints.start=journeyPoints.start||null; journeyPoints.end=journeyPoints.end||null;
+    if(journeyPoints.start) setJourneyMarker('start',journeyPoints.start,origin,'Start point');
+    if(journeyPoints.end) setJourneyMarker('end',journeyPoints.end,destination,'Destination');
+    status.textContent='Start & destination shown';
+    note.textContent='The navigation route could not be loaded right now. The map still shows the mapped start and destination; try again with internet access.';
+    document.getElementById('journeyStopsList').innerHTML=`<div class="journey-loading">${esc(err.message||'Could not load mapped route.')}</div>`;
+  }
+}
+ 
+function updateMovementUI(){
+  const fill = document.getElementById('movementFill');
+  const status = document.getElementById('movementStatus');
+  if(!latestPosition){ fill.style.width='0%'; status.textContent='Waiting for location'; return; }
+  const speed = latestPosition.coords.speed;
+  if(speed != null && speed > 0.5){
+    fill.style.width = Math.min(92, Math.max(12, speed * 4)) + '%';
+    status.textContent = 'Moving · ' + (speed*3.6).toFixed(1) + ' km/h';
+  }else{
+    fill.style.width='8%';
+    status.textContent='Stationary';
+  }
+}
+ 
+function updateGpsUI(position){
+  latestPosition = position;
+  const c = position.coords;
+  const latLng = [c.latitude, c.longitude];
+  initLiveMap();
+ 
+  document.getElementById('gpsLat').textContent = Number(c.latitude).toFixed(6);
+  document.getElementById('gpsLng').textContent = Number(c.longitude).toFixed(6);
+  document.getElementById('gpsAccuracy').textContent = c.accuracy ? Math.round(c.accuracy) + ' m' : '—';
+  document.getElementById('gpsSpeed').textContent = c.speed != null && c.speed >= 0 ? (c.speed * 3.6).toFixed(1) + ' km/h' : 'Stationary';
+  document.getElementById('gpsStatus').textContent = 'Tracking';
+  document.getElementById('gpsDot').classList.remove('off');
+  document.getElementById('gpsDot').classList.add('tracking-pulse');
+  document.getElementById('gpsUpdated').textContent = 'Updated ' + new Date(position.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  document.getElementById('mapLabel').textContent = 'Live · ±' + Math.round(c.accuracy || 0) + ' m';
+ 
+  if(liveMap){
+    if(!liveMarker){
+      liveMarker = L.circleMarker(latLng,{radius:8,weight:3}).addTo(liveMap).bindTooltip('You are here',{permanent:false});
+      liveMap.setView(latLng,16);
+    }else{
+      liveMarker.setLatLng(latLng);
+    }
+    if(!liveAccuracyCircle){
+      liveAccuracyCircle = L.circle(latLng,{radius:c.accuracy || 20,weight:1,fillOpacity:.08}).addTo(liveMap);
+    }else{
+      liveAccuracyCircle.setLatLng(latLng).setRadius(c.accuracy || 20);
+    }
+ 
+    const now = Date.now();
+    if(now-lastMapUpdate > 1500){
+      trailPoints.push(latLng);
+      if(trailPoints.length > 200) trailPoints.shift();
+      liveTrail.setLatLngs(trailPoints);
+      lastMapUpdate = now;
+    }
+    // Keep the live user visible without constantly zooming away from the trip landmarks.
+    if(!journeyStopsLoaded || !liveMap.getBounds().contains(latLng)) liveMap.panTo(latLng,{animate:true,duration:.5});
+  }
+  updateMovementUI();
+}
+ 
+function gpsError(error){
+  const messages = {1:'Location permission denied',2:'Location unavailable',3:'Location request timed out'};
+  document.getElementById('gpsStatus').textContent = messages[error.code] || 'GPS unavailable';
+  document.getElementById('gpsDot').classList.add('off');
+  document.getElementById('gpsDot').classList.remove('tracking-pulse');
+  document.getElementById('gpsUpdated').textContent = error.code === 1
+    ? 'Allow location access for this site, then press Enable GPS again.'
+    : 'Waiting for a usable GPS signal. Try moving outdoors and enable GPS again.';
+  document.getElementById('mapLabel').textContent = 'GPS unavailable';
+  document.getElementById('movementStatus').textContent = 'Waiting for location';
+}
+ 
+function requestLiveLocation(){
+  if(!('geolocation' in navigator)){
+    gpsError({code:2});
+    return;
+  }
+  initLiveMap();
+  if(gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
+  document.getElementById('gpsStatus').textContent = 'Requesting GPS…';
+  document.getElementById('mapLabel').textContent = 'Finding you…';
+  gpsWatchId = navigator.geolocation.watchPosition(updateGpsUI, gpsError, {
+    enableHighAccuracy:true,
+    maximumAge:3000,
+    timeout:15000
+  });
+}
+ 
+function stopLiveLocation(){
+  if(gpsWatchId !== null && 'geolocation' in navigator){
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+  document.getElementById('gpsStatus').textContent = 'Tracking stopped';
+  document.getElementById('gpsDot').classList.add('off');
+  document.getElementById('gpsDot').classList.remove('tracking-pulse');
+  document.getElementById('mapLabel').textContent = 'Trip ended';
+}
+ 
+function centerOnCurrentLocation(){
+  if(!latestPosition){
+    requestLiveLocation();
+    return;
+  }
+  const c = latestPosition.coords;
+  initLiveMap();
+  if(liveMap) liveMap.setView([c.latitude,c.longitude],17,{animate:true});
+}
+ 
+/* ---------- screen + overlay plumbing ---------- */
+function go(n){
+  lastUserScreen = n;
+  showScreen('s'+n);
+  toggleOverlay(false);
+  if(n===2) generateOptions();
+}
+ 
+function toggleOverlay(show, id){
+  const targetId = id || 'sosOverlay';
+  ['sosOverlay','locationOverlay'].forEach(oid=>{
+    const el = document.getElementById(oid);
+    const active = !!show && oid === targetId;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-hidden', active ? 'false' : 'true');
+    if(oid==='sosOverlay' && active) renderContacts();
+    if(oid==='sosOverlay' && active) hideSosError();
+  });
+}
+ 
+/* ---------- initial state ---------- */
+document.getElementById('originText').textContent = origin;
+document.getElementById('destText').textContent = destination;
+const datasetRouteCount = document.getElementById('datasetRouteCount');
+if(datasetRouteCount) datasetRouteCount.textContent = DATASET_SIZE;
+updateHomeSignals();
+</script>
+ 
+</body>
+</html>
+ 
