@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+.env
+transit_app.db
+scratch_test.py
+query.txt
